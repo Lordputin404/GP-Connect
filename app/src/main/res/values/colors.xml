@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the emblem's own white canvas so the official artwork sits
+         unaltered on the adaptive-icon background layer. -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Brand indigo #392281, measured from the official emblem. -->
+    <color name="splash_background">#392281</color>
+</resources>
