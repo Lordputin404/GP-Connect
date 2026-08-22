@@ -1,0 +1,17 @@
+# Gradle
+.gradle/
+build/
+
+# Android Studio / IntelliJ
+.idea/
+captures/
+.cxx/
+.kotlin/
+*.iml
+
+# Local configuration (SDK paths must never be committed)
+local.properties
+
+# OS artifacts
+.DS_Store
+Thumbs.db

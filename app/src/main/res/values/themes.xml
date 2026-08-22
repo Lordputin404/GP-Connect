@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Minimal baseline theme; replaced by the brand theme in Phase 1B. -->
+    <style name="Theme.GPConnect" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
