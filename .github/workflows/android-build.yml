@@ -20,10 +20,20 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        # Accepts SDK licenses so the Android Gradle plugin can auto-install
-        # any platform/build-tools component the runner image is missing.
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses and install platform 36 (non-interactive)
+        # ubuntu-latest ships the Android SDK with sdkmanager on PATH, but image
+        # updates can reset license state, which previously made the
+        # setup-android action hang on an "Accept? (y/N):" prompt. Accepting
+        # licenses here with `yes |` guarantees every sdkmanager prompt is
+        # answered, so nothing can ever block on stdin. Only the platform
+        # required by compileSdk 36 is installed explicitly; AGP auto-installs
+        # its own preferred build-tools once licenses are accepted.
+        run: |
+          if ! command -v sdkmanager >/dev/null 2>&1; then
+            export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          fi
+          yes | sdkmanager --licenses
+          sdkmanager --install "platforms;android-36"
 
       - name: Set up Gradle (with caching)
         # Caches the Gradle user home (dependency artifacts and wrapper
