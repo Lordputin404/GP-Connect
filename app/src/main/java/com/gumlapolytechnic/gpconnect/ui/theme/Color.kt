@@ -1,5 +1,7 @@
 package com.gumlapolytechnic.gpconnect.ui.theme
 
+import androidx.compose.ui.graphics.Color
+
 /**
  * GP Connect brand palette.
  *
@@ -10,80 +12,80 @@ package com.gumlapolytechnic.gpconnect.ui.theme
  *    indigo while staying muted and professional.
  */
 object BrandColors {
-    const val EmblemIndigo = 0xFF392281
-    const val EmblemOrange = 0xFFFE5E01
+    val EmblemIndigo = Color(0xFF392281)
+    val EmblemOrange = Color(0xFFFE5E01)
 }
 
 // --- Light scheme -----------------------------------------------------------
 
 val LightPrimary = BrandColors.EmblemIndigo
-val LightOnPrimary = 0xFFFFFFFF
-val LightPrimaryContainer = 0xFFE7DEFF
-val LightOnPrimaryContainer = 0xFF22005D
+val LightOnPrimary = Color(0xFFFFFFFF)
+val LightPrimaryContainer = Color(0xFFE7DEFF)
+val LightOnPrimaryContainer = Color(0xFF22005D)
 
-val LightSecondary = 0xFF006A6E
-val LightOnSecondary = 0xFFFFFFFF
-val LightSecondaryContainer = 0xFF9CF0F4
-val LightOnSecondaryContainer = 0xFF002022
+val LightSecondary = Color(0xFF006A6E)
+val LightOnSecondary = Color(0xFFFFFFFF)
+val LightSecondaryContainer = Color(0xFF9CF0F4)
+val LightOnSecondaryContainer = Color(0xFF002022)
 
-val LightTertiary = 0xFF9C4A00
-val LightOnTertiary = 0xFFFFFFFF
-val LightTertiaryContainer = 0xFFFFDCC5
-val LightOnTertiaryContainer = 0xFF331200
+val LightTertiary = Color(0xFF9C4A00)
+val LightOnTertiary = Color(0xFFFFFFFF)
+val LightTertiaryContainer = Color(0xFFFFDCC5)
+val LightOnTertiaryContainer = Color(0xFF331200)
 
-val LightError = 0xFFB3261E
-val LightOnError = 0xFFFFFFFF
-val LightErrorContainer = 0xFFF9DEDC
-val LightOnErrorContainer = 0xFF410E0B
+val LightError = Color(0xFFB3261E)
+val LightOnError = Color(0xFFFFFFFF)
+val LightErrorContainer = Color(0xFFF9DEDC)
+val LightOnErrorContainer = Color(0xFF410E0B)
 
-val LightBackground = 0xFFFCF9FE
-val LightOnBackground = 0xFF1B1A22
-val LightSurface = 0xFFFCF9FE
-val LightOnSurface = 0xFF1B1A22
-val LightSurfaceVariant = 0xFFE7E1F3
-val LightOnSurfaceVariant = 0xFF484554
+val LightBackground = Color(0xFFFCF9FE)
+val LightOnBackground = Color(0xFF1B1A22)
+val LightSurface = Color(0xFFFCF9FE)
+val LightOnSurface = Color(0xFF1B1A22)
+val LightSurfaceVariant = Color(0xFFE7E1F3)
+val LightOnSurfaceVariant = Color(0xFF484554)
 
-val LightOutline = 0xFF787489
-val LightOutlineVariant = 0xFFC8C4D8
+val LightOutline = Color(0xFF787489)
+val LightOutlineVariant = Color(0xFFC8C4D8)
 
-val LightInverseSurface = 0xFF312F3A
-val LightInverseOnSurface = 0xFFF4EFF7
-val LightInversePrimary = 0xFFCBB8FF
+val LightInverseSurface = Color(0xFF312F3A)
+val LightInverseOnSurface = Color(0xFFF4EFF7)
+val LightInversePrimary = Color(0xFFCBB8FF)
 
 // --- Dark scheme ------------------------------------------------------------
 // Deliberately not an inversion of light: deep violet-black surfaces, softened
 // lavender primary, and low-tone containers keep text readable on dark.
 
-val DarkPrimary = 0xFFCBB8FF
-val DarkOnPrimary = 0xFF2F1461
-val DarkPrimaryContainer = 0xFF49309A
-val DarkOnPrimaryContainer = 0xFFE6DEFF
+val DarkPrimary = Color(0xFFCBB8FF)
+val DarkOnPrimary = Color(0xFF2F1461)
+val DarkPrimaryContainer = Color(0xFF49309A)
+val DarkOnPrimaryContainer = Color(0xFFE6DEFF)
 
-val DarkSecondary = 0xFF80D4D8
-val DarkOnSecondary = 0xFF003739
-val DarkSecondaryContainer = 0xFF004F52
-val DarkOnSecondaryContainer = 0xFF9CF0F4
+val DarkSecondary = Color(0xFF80D4D8)
+val DarkOnSecondary = Color(0xFF003739)
+val DarkSecondaryContainer = Color(0xFF004F52)
+val DarkOnSecondaryContainer = Color(0xFF9CF0F4)
 
-val DarkTertiary = 0xFFFFB784
-val DarkOnTertiary = 0xFF4A2800
-val DarkTertiaryContainer = 0xFF6B3B00
-val DarkOnTertiaryContainer = 0xFFFFDCC5
+val DarkTertiary = Color(0xFFFFB784)
+val DarkOnTertiary = Color(0xFF4A2800)
+val DarkTertiaryContainer = Color(0xFF6B3B00)
+val DarkOnTertiaryContainer = Color(0xFFFFDCC5)
 
-val DarkError = 0xFFFFB4AB
-val DarkOnError = 0xFF690005
-val DarkErrorContainer = 0xFF93000A
-val DarkOnErrorContainer = 0xFFFFDAD6
+val DarkError = Color(0xFFFFB4AB)
+val DarkOnError = Color(0xFF690005)
+val DarkErrorContainer = Color(0xFF93000A)
+val DarkOnErrorContainer = Color(0xFFFFDAD6)
 
-val DarkBackground = 0xFF131218
-val DarkOnBackground = 0xFFE5E1EC
-val DarkSurface = 0xFF131218
-val DarkOnSurface = 0xFFE5E1EC
-val DarkSurfaceVariant = 0xFF484554
-val DarkOnSurfaceVariant = 0xFFC9C5D4
+val DarkBackground = Color(0xFF131218)
+val DarkOnBackground = Color(0xFFE5E1EC)
+val DarkSurface = Color(0xFF131218)
+val DarkOnSurface = Color(0xFFE5E1EC)
+val DarkSurfaceVariant = Color(0xFF484554)
+val DarkOnSurfaceVariant = Color(0xFFC9C5D4)
 
-val DarkOutline = 0xFF938F9F
-val DarkOutlineVariant = 0xFF484554
+val DarkOutline = Color(0xFF938F9F)
+val DarkOutlineVariant = Color(0xFF484554)
 
-val DarkInverseSurface = 0xFFE5E1EC
-val DarkInverseOnSurface = 0xFF312F3A
-val DarkInversePrimary = 0xFF4A3290
+val DarkInverseSurface = Color(0xFFE5E1EC)
+val DarkInverseOnSurface = Color(0xFF312F3A)
+val DarkInversePrimary = Color(0xFF4A3290)
