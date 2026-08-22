@@ -20,20 +20,30 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Accept Android SDK licenses and install platform 36 (non-interactive)
-        # ubuntu-latest ships the Android SDK with sdkmanager on PATH, but image
-        # updates can reset license state, which previously made the
-        # setup-android action hang on an "Accept? (y/N):" prompt. Accepting
-        # licenses here with `yes |` guarantees every sdkmanager prompt is
-        # answered, so nothing can ever block on stdin. Only the platform
-        # required by compileSdk 36 is installed explicitly; AGP auto-installs
-        # its own preferred build-tools once licenses are accepted.
+      - name: Accept Android SDK licenses (deterministic, non-interactive)
+        # The ubuntu-24.04 image already ships everything assembleDebug needs
+        # (platforms android-36 rev 2; build-tools 34.0.0-37.0.0), so no SDK
+        # packages are installed here. The current sdkmanager's `--licenses`
+        # interview no longer completes under piped stdin (both the
+        # setup-android action and `yes |` stalled at the "(y/N)?" prompt), so
+        # acceptance of the two standard SDK licenses is recorded directly via
+        # their hash files — identical to what answering "y" writes. No other
+        # license categories (Google TV, XR, emulator, ...) are touched, no
+        # command can block on stdin, and AGP can silently auto-provision a
+        # component in the unlikely event one is ever missing.
         run: |
-          if ! command -v sdkmanager >/dev/null 2>&1; then
-            export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
-          fi
-          yes | sdkmanager --licenses
-          sdkmanager --install "platforms;android-36"
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          mkdir -p "$SDK_ROOT/licenses"
+          printf '%s\n' \
+            '8933bad161af4178b1185d1a37fbf41ea5269c55' \
+            'd56f5187479451eabf01fb78af6dfcb131a6481e' \
+            '24333f8a63b6825ea9c5514f83c2829b004d1fee' \
+            > "$SDK_ROOT/licenses/android-sdk-license"
+          printf '%s\n' \
+            '84831b9409646a918e30573bab4c9c91346d8abd' \
+            > "$SDK_ROOT/licenses/android-sdk-preview-license"
+          echo "Preinstalled platforms:";   ls "$SDK_ROOT/platforms" || true
+          echo "Preinstalled build-tools:"; ls "$SDK_ROOT/build-tools" || true
 
       - name: Set up Gradle (with caching)
         # Caches the Gradle user home (dependency artifacts and wrapper
