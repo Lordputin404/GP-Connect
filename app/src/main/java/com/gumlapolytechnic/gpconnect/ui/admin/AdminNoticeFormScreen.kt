@@ -1,9 +1,10 @@
 package com.gumlapolytechnic.gpconnect.ui.admin
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,8 +13,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -431,11 +430,15 @@ private fun FieldLabel(text: String) {
     )
 }
 
+/**
+ * Horizontally scrolling chip row. Content is a normal composable lambda so
+ * callers may resolve strings and emit chips directly.
+ */
 @Composable
-private fun ChipRow(content: LazyListScope.() -> Unit) {
-    LazyRow(
+private fun ChipRow(content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(vertical = 2.dp),
         content = content,
     )
 }
