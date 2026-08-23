@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -28,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,12 +52,13 @@ import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
 
 /**
- * Mock login screen. Branded header (official emblem, Phase 1B palette) above
- * the student sign-in form; the demo credentials hint keeps the prototype
- * showcase frictionless.
+ * Student sign-in screen. Branded header (official emblem, Phase 1B palette)
+ * above the sign-in form; the demo credentials hint keeps the prototype
+ * showcase frictionless. "Admin Login" is a deliberate secondary entry point
+ * (Phase 3 builds the real admin experience).
  */
 @Composable
-fun LoginScreen() {
+fun StudentLoginScreen(onAdminLoginClick: () -> Unit) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: LoginViewModel = viewModel { LoginViewModel(app.container.authRepository) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -186,6 +189,19 @@ fun LoginScreen() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
+        Spacer(modifier = Modifier.height(24.dp))
+        TextButton(
+            onClick = onAdminLoginClick,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.AdminPanelSettings,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.action_admin_login))
+        }
         Spacer(modifier = Modifier.height(32.dp))
     }
 }

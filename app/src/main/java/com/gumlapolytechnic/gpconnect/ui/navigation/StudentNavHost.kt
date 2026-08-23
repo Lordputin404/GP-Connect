@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -29,7 +30,10 @@ import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
+import com.gumlapolytechnic.gpconnect.ui.notices.NoticeDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticesScreen
+import com.gumlapolytechnic.gpconnect.ui.placeholder.CampusFeature
+import com.gumlapolytechnic.gpconnect.ui.placeholder.FeaturePlaceholderScreen
 import com.gumlapolytechnic.gpconnect.ui.profile.ProfileScreen
 
 /** Route names for the student navigation graph. */
@@ -38,6 +42,14 @@ object Routes {
     const val NOTICES = "notices"
     const val CALENDAR = "calendar"
     const val PROFILE = "profile"
+
+    const val NOTICE_DETAIL = "notice/{noticeId}"
+    const val NOTICE_DETAIL_ARG = "noticeId"
+    const val FEATURE_PLACEHOLDER = "feature/{feature}"
+    const val FEATURE_ARG = "feature"
+
+    fun noticeDetail(noticeId: String) = "notice/$noticeId"
+    fun featurePlaceholder(feature: CampusFeature) = "feature/${feature.routeArg}"
 }
 
 private enum class TopLevelDestination(
@@ -52,41 +64,40 @@ private enum class TopLevelDestination(
     PROFILE(Routes.PROFILE, R.string.tab_profile, Icons.Filled.Person, Icons.Outlined.Person),
 }
 
+private val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
+
 /**
- * Student app shell: bottom navigation with the four top-level destinations.
- * Tab taps use launchSingleTop + saveState/restoreState so repeated taps never
- * stack duplicate destinations and each tab keeps its own back-stack state.
+ * Student app shell. Bottom navigation covers the four top-level
+ * destinations; notice detail and feature placeholders open as ordinary
+ * destinations above them (bottom bar hidden) with normal back behavior.
+ * Tab taps use launchSingleTop + saveState/restoreState so repeated taps
+ * never stack duplicate destinations and each tab keeps its own state.
  */
 @Composable
 fun StudentApp(user: User, onLogout: () -> Unit) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    val showBottomBar = currentRoute in topLevelRoutes
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                TopLevelDestination.entries.forEach { destination ->
-                    val selected = currentRoute == destination.route
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
-                                contentDescription = stringResource(destination.labelRes),
-                            )
-                        },
-                        label = { Text(stringResource(destination.labelRes)) },
-                    )
+            if (showBottomBar) {
+                NavigationBar {
+                    TopLevelDestination.entries.forEach { destination ->
+                        val selected = currentRoute == destination.route
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { navController.navigateTopLevel(destination.route) },
+                            icon = {
+                                Icon(
+                                    imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
+                                    contentDescription = stringResource(destination.labelRes),
+                                )
+                            },
+                            label = { Text(stringResource(destination.labelRes)) },
+                        )
+                    }
                 }
             }
         },
@@ -96,10 +107,54 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
             startDestination = Routes.HOME,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Routes.HOME) { HomeScreen(user = user) }
-            composable(Routes.NOTICES) { NoticesScreen() }
+            composable(Routes.HOME) {
+                HomeScreen(
+                    user = user,
+                    onNoticeClick = { id -> navController.navigate(Routes.noticeDetail(id)) },
+                    onViewAllNotices = { navController.navigateTopLevel(Routes.NOTICES) },
+                    onFeatureClick = { feature ->
+                        navController.navigate(Routes.featurePlaceholder(feature))
+                    },
+                )
+            }
+            composable(Routes.NOTICES) {
+                NoticesScreen(
+                    onNoticeClick = { id -> navController.navigate(Routes.noticeDetail(id)) },
+                )
+            }
             composable(Routes.CALENDAR) { CalendarScreen() }
-            composable(Routes.PROFILE) { ProfileScreen(user = user, onLogout = onLogout) }
+            composable(Routes.PROFILE) {
+                ProfileScreen(user = user, onLogout = onLogout)
+            }
+            composable(Routes.NOTICE_DETAIL) { entry ->
+                val noticeId = entry.arguments?.getString(Routes.NOTICE_DETAIL_ARG)
+                if (noticeId != null) {
+                    NoticeDetailScreen(
+                        noticeId = noticeId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+            }
+            composable(Routes.FEATURE_PLACEHOLDER) { entry ->
+                val feature = CampusFeature.fromRouteArg(entry.arguments?.getString(Routes.FEATURE_ARG))
+                if (feature != null) {
+                    FeaturePlaceholderScreen(
+                        feature = feature,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+            }
         }
+    }
+}
+
+/** Single top-level navigation pattern: no duplicates, tab state preserved. */
+private fun NavHostController.navigateTopLevel(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
     }
 }
