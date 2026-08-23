@@ -21,12 +21,14 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
+import com.gumlapolytechnic.gpconnect.data.model.AdminModule
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.components.CategoryBadge
@@ -55,12 +58,15 @@ import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
 import com.gumlapolytechnic.gpconnect.ui.components.ErrorState
 import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
 import com.gumlapolytechnic.gpconnect.ui.components.SectionHeader
+import com.gumlapolytechnic.gpconnect.ui.components.moduleLabel
+import com.gumlapolytechnic.gpconnect.ui.components.roleLabel
 import com.gumlapolytechnic.gpconnect.util.Dates
 
 /**
- * Admin dashboard: top app bar with logout, welcome block, overview counters
- * (total / pinned / recent), a prominent Create Notice action, and the full
- * notice management list with edit, delete (confirmed) and pin/unpin.
+ * Role-aware admin dashboard. SUPER_ADMIN: welcome, global counters (users,
+ * admins, notices), notices-by-module breakdown, Create Notice, Admin
+ * Management and the full notice list. Department admins: welcome with their
+ * module, module counters, Create Notice and their module's notice list only.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,11 +75,17 @@ fun AdminDashboardScreen(
     onLogout: () -> Unit,
     onCreateNotice: () -> Unit,
     onEditNotice: (String) -> Unit,
+    onOpenAdminManagement: (() -> Unit)?,
 ) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
-    val viewModel: AdminDashboardViewModel =
-        viewModel { AdminDashboardViewModel(app.container.noticeRepository) }
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val viewModel: AdminDashboardViewModel = viewModel {
+        AdminDashboardViewModel(
+            adminUser = adminUser,
+            noticeRepository = app.container.noticeRepository,
+            userRepository = app.container.userRepository,
+        )
+    }
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var noticePendingDelete by remember { mutableStateOf<Notice?>(null) }
 
     Scaffold(
@@ -130,10 +142,9 @@ fun AdminDashboardScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     item {
-                        // --- Welcome + overview ------------------------------------
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = stringResource(R.string.admin_dashboard_welcome),
+                            text = roleLabel(adminUser.role),
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -143,28 +154,75 @@ fun AdminDashboardScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            StatCard(
-                                label = stringResource(R.string.admin_stat_total),
-                                value = state.totalNotices,
-                                modifier = Modifier.weight(1f),
+
+                        if (state.isSuperAdmin) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                StatCard(
+                                    label = stringResource(R.string.admin_stat_notices),
+                                    value = state.totalNotices,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                StatCard(
+                                    label = stringResource(R.string.admin_stat_admins),
+                                    value = state.totalAdmins,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                StatCard(
+                                    label = stringResource(R.string.admin_stat_users),
+                                    value = state.totalUsers,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.admin_stat_admin_status,
+                                    state.enabledAdmins,
+                                    state.disabledAdmins,
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            StatCard(
-                                label = stringResource(R.string.admin_stat_pinned),
-                                value = state.pinnedNotices,
-                                modifier = Modifier.weight(1f),
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = stringResource(R.string.admin_stat_by_module),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            StatCard(
-                                label = stringResource(R.string.admin_stat_recent),
-                                value = state.recentNotices,
-                                modifier = Modifier.weight(1f),
-                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                state.noticesByModule.forEach { (module, count) ->
+                                    ModuleCountChip(module = module, count = count)
+                                }
+                            }
+                        } else {
+                            state.module?.let { module ->
+                                Text(
+                                    text = stringResource(
+                                        R.string.admin_module_intro,
+                                        moduleLabel(module),
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                StatCard(
+                                    label = stringResource(R.string.admin_stat_notices),
+                                    value = state.totalNotices,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                StatCard(
+                                    label = stringResource(R.string.admin_stat_pinned),
+                                    value = state.pinnedNotices,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
                         }
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = onCreateNotice,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
+                        Button(onClick = onCreateNotice, modifier = Modifier.fillMaxWidth()) {
                             Icon(
                                 imageVector = Icons.Outlined.Add,
                                 contentDescription = null,
@@ -172,6 +230,21 @@ fun AdminDashboardScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.admin_action_create_notice))
+                        }
+                        if (onOpenAdminManagement != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = onOpenAdminManagement,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Groups,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.admin_management_title))
+                            }
                         }
                         Spacer(modifier = Modifier.height(20.dp))
                         SectionHeader(title = stringResource(R.string.admin_section_manage))
@@ -229,6 +302,21 @@ fun AdminDashboardScreen(
                     Text(stringResource(R.string.admin_action_cancel))
                 }
             },
+        )
+    }
+}
+
+@Composable
+private fun ModuleCountChip(module: AdminModule, count: Int) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Text(
+            text = "${moduleLabel(module)}: $count",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
         )
     }
 }
@@ -304,6 +392,11 @@ private fun AdminNoticeCard(
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = moduleLabel(notice.module),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(4.dp))

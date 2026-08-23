@@ -21,8 +21,9 @@ sealed interface Audience {
 data class Attachment(val name: String)
 
 /**
- * Official college notice. Timestamps are epoch milliseconds so the mock model
- * maps 1:1 onto Firestore in Phase 4.
+ * Official college notice. Timestamps are epoch milliseconds. Ownership
+ * metadata (createdBy uid, ownerRole, module) drives module-scoped
+ * authorization for department admins; Firestore security rules enforce it.
  */
 data class Notice(
     val id: String,
@@ -34,4 +35,8 @@ data class Notice(
     val attachments: List<Attachment> = emptyList(),
     val author: String,
     val createdAt: Long,
+    val updatedAt: Long = createdAt,
+    val createdBy: String = "",
+    val ownerRole: UserRole = UserRole.SUPER_ADMIN,
+    val module: AdminModule = AdminModule.GLOBAL,
 )

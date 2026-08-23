@@ -79,7 +79,7 @@ fun AdminNoticeFormScreen(
     val viewModel: AdminNoticeFormViewModel = viewModel(key = editNoticeId ?: "create") {
         AdminNoticeFormViewModel(
             noticeRepository = app.container.noticeRepository,
-            adminAuthor = adminUser.name,
+            adminUser = adminUser,
             editNoticeId = editNoticeId,
         )
     }
@@ -354,6 +354,14 @@ fun AdminNoticeFormScreen(
                     }
 
                     Spacer(modifier = Modifier.height(28.dp))
+                    if (state.saveError) {
+                        Text(
+                            text = stringResource(R.string.admin_form_save_error),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(bottom = 12.dp),
+                        )
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedButton(
                             onClick = onBack,

@@ -1,7 +1,6 @@
 package com.gumlapolytechnic.gpconnect.ui.login
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -50,12 +50,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
+import com.gumlapolytechnic.gpconnect.ui.components.loginErrorMessage
 
 /**
- * Student sign-in screen. Branded header (official emblem, Phase 1B palette)
- * above the sign-in form; the demo credentials hint keeps the prototype
- * showcase frictionless. "Admin Login" is a deliberate secondary entry point
- * (Phase 3 builds the real admin experience).
+ * Student sign-in screen with Firebase Authentication (Phase 4B): branded
+ * header, email + password form, blank-field validation, friendly Firebase
+ * error messages and a loading state. "Admin Login" remains the deliberate
+ * secondary entry point.
  */
 @Composable
 fun StudentLoginScreen(onAdminLoginClick: () -> Unit) {
@@ -106,14 +107,14 @@ fun StudentLoginScreen(onAdminLoginClick: () -> Unit) {
 
         Spacer(modifier = Modifier.height(36.dp))
         OutlinedTextField(
-            value = state.username,
-            onValueChange = viewModel::onUsernameChange,
-            label = { Text(stringResource(R.string.username_label)) },
-            leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
-            isError = state.usernameError,
+            value = state.email,
+            onValueChange = viewModel::onEmailChange,
+            label = { Text(stringResource(R.string.login_email_label)) },
+            leadingIcon = { Icon(Icons.Filled.Mail, contentDescription = null) },
+            isError = state.emailError,
             supportingText = {
-                if (state.usernameError) {
-                    Text(stringResource(R.string.error_username_required))
+                if (state.emailError) {
+                    Text(stringResource(R.string.error_email_required))
                 }
             },
             singleLine = true,
@@ -151,10 +152,10 @@ fun StudentLoginScreen(onAdminLoginClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
 
-        if (state.credentialsError) {
+        state.error?.let { error ->
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = stringResource(R.string.error_invalid_credentials),
+                text = loginErrorMessage(error = error, adminForm = false),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -182,13 +183,6 @@ fun StudentLoginScreen(onAdminLoginClick: () -> Unit) {
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = stringResource(R.string.demo_credentials_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        )
         Spacer(modifier = Modifier.height(24.dp))
         TextButton(
             onClick = onAdminLoginClick,

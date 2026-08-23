@@ -2,12 +2,15 @@ package com.gumlapolytechnic.gpconnect.ui.admin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gumlapolytechnic.gpconnect.data.model.AdminModule
 import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
+import com.gumlapolytechnic.gpconnect.data.model.User
+import com.gumlapolytechnic.gpconnect.data.model.UserRole
+import com.gumlapolytechnic.gpconnect.data.model.departmentModule
 import com.gumlapolytechnic.gpconnect.data.repository.NoticeDraft
 import com.gumlapolytechnic.gpconnect.data.repository.NoticeRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,18 +50,20 @@ data class NoticeFormUiState(
     val bodyError: Boolean = false,
     val semesterError: Boolean = false,
     val isSaving: Boolean = false,
+    val saveError: Boolean = false,
     val saved: Boolean = false,
 )
 
 /**
- * Notice create/edit form state. Create mode: a [NoticeDraft] with the signed
- * in administrator as author. Edit mode: preloads by ID, preserves ID/author,
- * and updates in place — read markers are untouched, so read/unread state
- * survives edits.
+ * Notice create/edit form state. Create mode: a [NoticeDraft] stamped with the
+ * acting admin's authority — SUPER_ADMIN publishes GLOBAL content, department
+ * admins publish their own module (Firestore rules reject mismatches).
+ * Edit mode: preloads by ID, preserves ID/author/ownership, and updates in
+ * place — read markers are untouched, so read/unread state survives edits.
  */
 class AdminNoticeFormViewModel(
     private val noticeRepository: NoticeRepository,
-    private val adminAuthor: String,
+    private val adminUser: User,
     private val editNoticeId: String?,
 ) : ViewModel() {
 
@@ -177,45 +182,60 @@ class AdminNoticeFormViewModel(
         }
 
         _uiState.update {
-            it.copy(isSaving = true, titleError = false, bodyError = false, semesterError = false)
+            it.copy(isSaving = true, titleError = false, bodyError = false, semesterError = false, saveError = false)
         }
         viewModelScope.launch {
-            delay(SAVE_DELAY_MS)
-            if (editNoticeId == null) {
-                noticeRepository.createNotice(
-                    NoticeDraft(
-                        title = state.title.trim(),
-                        body = state.body.trim(),
-                        category = state.category,
-                        audience = audience,
-                        isPinned = state.isPinned,
-                        attachments = state.attachments,
-                        author = adminAuthor,
-                        createdAt = state.createdAt,
-                    ),
-                )
-            } else {
-                val existing = noticeRepository.getNotice(editNoticeId)
-                if (existing != null) {
-                    noticeRepository.updateNotice(
-                        existing.copy(
+            val succeeded = try {
+                if (editNoticeId == null) {
+                    noticeRepository.createNotice(
+                        NoticeDraft(
                             title = state.title.trim(),
                             body = state.body.trim(),
                             category = state.category,
                             audience = audience,
                             isPinned = state.isPinned,
                             attachments = state.attachments,
+                            author = adminUser.name,
                             createdAt = state.createdAt,
+                            ownerRole = adminUser.role,
+                            module = if (adminUser.role == UserRole.SUPER_ADMIN) {
+                                AdminModule.GLOBAL
+                            } else {
+                                adminUser.role.departmentModule ?: AdminModule.GLOBAL
+                            },
                         ),
                     )
+                } else {
+                    val existing = noticeRepository.getNotice(editNoticeId)
+                    if (existing != null) {
+                        noticeRepository.updateNotice(
+                            existing.copy(
+                                title = state.title.trim(),
+                                body = state.body.trim(),
+                                category = state.category,
+                                audience = audience,
+                                isPinned = state.isPinned,
+                                attachments = state.attachments,
+                                createdAt = state.createdAt,
+                            ),
+                        )
+                    }
+                }
+                true
+            } catch (e: Exception) {
+                false
+            }
+            _uiState.update {
+                if (succeeded) {
+                    it.copy(isSaving = false, saved = true)
+                } else {
+                    it.copy(isSaving = false, saveError = true)
                 }
             }
-            _uiState.update { it.copy(isSaving = false, saved = true) }
         }
     }
 
     private companion object {
-        const val SAVE_DELAY_MS = 500L
         val VALID_SEMESTER_RANGE = 1..6
     }
 }

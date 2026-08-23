@@ -62,11 +62,17 @@ fun ProfileScreen(user: User, onLogout: () -> Unit) {
             color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = stringResource(R.string.course_semester_format, user.course, user.semester),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        user.course?.let { course ->
+            Text(
+                text = if (user.semester != null) {
+                    stringResource(R.string.course_semester_format, course, user.semester)
+                } else {
+                    course
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         Spacer(modifier = Modifier.height(28.dp))
         Surface(
@@ -74,21 +80,22 @@ fun ProfileScreen(user: User, onLogout: () -> Unit) {
             color = MaterialTheme.colorScheme.surfaceVariant,
             modifier = Modifier.fillMaxWidth(),
         ) {
+            val infoRows = buildList {
+                user.department?.let { department ->
+                    add(stringResource(R.string.profile_department_label) to department)
+                }
+                user.rollNo?.let { rollNo ->
+                    add(stringResource(R.string.profile_roll_no_label) to rollNo)
+                }
+                add(stringResource(R.string.profile_role_label) to stringResource(R.string.profile_role_student))
+            }
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                ProfileRow(
-                    label = stringResource(R.string.profile_department_label),
-                    value = user.department,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                ProfileRow(
-                    label = stringResource(R.string.profile_roll_no_label),
-                    value = user.rollNo,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                ProfileRow(
-                    label = stringResource(R.string.profile_role_label),
-                    value = stringResource(R.string.profile_role_student),
-                )
+                infoRows.forEachIndexed { index, (label, value) ->
+                    ProfileRow(label = label, value = value)
+                    if (index != infoRows.lastIndex) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                }
             }
         }
 

@@ -4,41 +4,66 @@
     <string name="app_tagline">Your Campus. Your Information. One Place.</string>
     <string name="cd_college_logo">Gumla Polytechnic official logo</string>
 
-    <!-- Login -->
-    <string name="username_label">Username or email</string>
+    <!-- Login (Firebase Authentication) -->
+    <string name="login_email_label">Email</string>
     <string name="password_label">Password</string>
     <string name="action_sign_in">Sign in</string>
     <string name="signing_in">Signing in…</string>
-    <string name="error_username_required">Enter your username or email</string>
+    <string name="error_email_required">Enter your email</string>
     <string name="error_password_required">Enter your password</string>
-    <string name="error_invalid_credentials">Incorrect username or password</string>
-    <string name="demo_credentials_hint">Demo student — username: amar · password: demo1234</string>
+    <string name="error_invalid_credentials">Incorrect email or password</string>
+    <string name="error_account_not_configured">This account is not configured in GP Connect. Contact the college administrator.</string>
+    <string name="error_account_disabled">This account has been disabled.</string>
+    <string name="error_not_student_account">This is not a student account. Use Admin Login instead.</string>
+    <string name="error_not_admin_account">This is not an administrator account.</string>
+    <string name="error_network">Network error — check your connection and try again.</string>
+    <string name="error_rate_limited">Too many attempts. Try again later.</string>
     <string name="cd_toggle_password">Show or hide password</string>
     <string name="action_admin_login">Admin Login</string>
 
-    <!-- Admin portal (Phase 3, mock authentication) -->
-    <string name="admin_portal_title">Admin Portal</string>
-    <string name="admin_login_username_label">Username</string>
-    <string name="admin_login_password_label">Password</string>
-    <string name="admin_login_error">Invalid administrator credentials</string>
+    <!-- Roles and modules -->
+    <string name="role_super_admin">Super Admin</string>
+    <string name="role_canteen_admin">Canteen Admin</string>
+    <string name="role_library_admin">Library Admin</string>
+    <string name="role_faculty_admin">Faculty Admin</string>
+    <string name="role_facility_admin">Facility Admin</string>
+    <string name="module_library">Library</string>
+    <string name="module_canteen">Canteen</string>
+    <string name="module_faculty">Faculty</string>
+    <string name="module_facility">Facilities</string>
+    <string name="module_global">Global</string>
 
-    <!-- Admin dashboard -->
-    <string name="admin_dashboard_welcome">Welcome, Administrator</string>
-    <string name="admin_stat_total">Total notices</string>
-    <string name="admin_stat_pinned">Pinned</string>
-    <string name="admin_stat_recent">Recent</string>
+    <!-- Admin portal -->
+    <string name="admin_portal_title">Admin Portal</string>
+    <string name="admin_cd_logout">Logout</string>
     <string name="admin_action_create_notice">Create Notice</string>
     <string name="admin_section_manage">Manage notices</string>
     <string name="admin_dashboard_empty_title">No notices yet</string>
     <string name="admin_dashboard_empty_body">Create the first notice for the college.</string>
     <string name="admin_dashboard_error">Notices could not be loaded.</string>
-    <string name="admin_cd_logout">Logout</string>
     <string name="admin_delete_title">Delete this notice?</string>
     <string name="admin_action_delete">Delete</string>
     <string name="admin_action_cancel">Cancel</string>
     <string name="admin_action_edit">Edit</string>
     <string name="admin_action_pin">Pin</string>
     <string name="admin_action_unpin">Unpin</string>
+    <string name="admin_stat_notices">Notices</string>
+    <string name="admin_stat_admins">Admins</string>
+    <string name="admin_stat_users">Users</string>
+    <string name="admin_stat_pinned">Pinned</string>
+    <string name="admin_stat_admin_status">Admins: %1$d enabled · %2$d disabled</string>
+    <string name="admin_stat_by_module">Notices by module</string>
+    <string name="admin_module_intro">You manage the %1$s module.</string>
+
+    <!-- Admin management (SUPER_ADMIN only) -->
+    <string name="admin_management_title">Admin Management</string>
+    <string name="admin_management_empty_title">No administrators</string>
+    <string name="admin_management_empty_body">Administrator profiles will appear here.</string>
+    <string name="admin_management_note">Enable or disable administrator accounts and assign roles. New administrator accounts are created in the Firebase Console.</string>
+    <string name="admin_management_you">(you)</string>
+    <string name="admin_management_disabled">Disabled</string>
+    <string name="admin_assign_role_title">Assign role</string>
+    <string name="admin_assign_role_action">Assign role</string>
 
     <!-- Admin notice form (create + edit) -->
     <string name="admin_form_create_title">Create Notice</string>
@@ -62,6 +87,7 @@
     <string name="admin_form_date_change">Change</string>
     <string name="admin_form_date_confirm">OK</string>
     <string name="admin_form_saving">Saving…</string>
+    <string name="admin_form_save_error">Could not save the notice. Check your connection and permissions, then try again.</string>
     <string name="admin_form_action_save">Save</string>
     <string name="admin_audience_all">All students</string>
     <string name="admin_audience_department">Department</string>
@@ -119,7 +145,7 @@
     <string name="error_generic_title">Something went wrong</string>
     <string name="action_retry">Retry</string>
 
-    <!-- Quick access / campus features (Phase 2 placeholders) -->
+    <!-- Quick access / campus features (later-phase placeholders) -->
     <string name="feature_library_title">Library</string>
     <string name="feature_library_description">Browse, search and track library books, timings and new arrivals.</string>
     <string name="feature_canteen_title">Canteen</string>

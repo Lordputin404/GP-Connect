@@ -1,0 +1,115 @@
+rules_version = '2';
+
+// GP Connect — Firestore Security Rules (Phase 4B)
+//
+// STATUS: authored, NOT yet deployed or penetration-tested. Deploy manually
+// via the Firebase Console (Firestore → Rules) or the Firebase CLI.
+//
+// Principles enforced here:
+//  1. Only authenticated users read content.
+//  2. Students (and everyone) cannot mutate user roles/enabled/module.
+//  3. Students cannot create/edit/delete notices.
+//  4. Department admins can only write notices belonging to their module.
+//  5. Department admins cannot modify users documents at all.
+//  6/7. Nobody can promote themselves: role changes require SUPER_ADMIN.
+//  8. SUPER_ADMIN has global administrative authority.
+//  9. Users cannot change their own role/module/enabled state.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isEnabled() {
+      return isSignedIn() && profile().enabled == true;
+    }
+
+    function currentRole() {
+      return profile().role;
+    }
+
+    function isSuperAdmin() {
+      return isEnabled() && currentRole() == 'SUPER_ADMIN';
+    }
+
+    function isDepartmentAdmin() {
+      return isEnabled() &&
+        currentRole() in ['LIBRARY_ADMIN', 'CANTEEN_ADMIN', 'FACULTY_ADMIN', 'FACILITY_ADMIN'];
+    }
+
+    function moduleForRole(role) {
+      return role == 'LIBRARY_ADMIN' ? 'LIBRARY'
+        : role == 'CANTEEN_ADMIN' ? 'CANTEEN'
+        : role == 'FACULTY_ADMIN' ? 'FACULTY'
+        : role == 'FACILITY_ADMIN' ? 'FACILITY'
+        : 'GLOBAL';
+    }
+
+    // ---- users/{uid} -------------------------------------------------------
+    match /users/{uid} {
+      // Own profile or SUPER_ADMIN (admin management list/reads).
+      allow read: if isSignedIn() && (request.auth.uid == uid || isSuperAdmin());
+
+      // Profiles are created during bootstrap (console/Admin SDK), or by a
+      // super admin for a freshly created auth account.
+      allow create: if isSuperAdmin()
+        && request.resource.data.role in
+             ['SUPER_ADMIN', 'CANTEEN_ADMIN', 'LIBRARY_ADMIN', 'FACULTY_ADMIN', 'FACILITY_ADMIN', 'STUDENT'];
+
+      // SUPER_ADMIN may change anything; users may only update their own
+      // cosmetic fields — never role, enabled or module.
+      allow update: if isSuperAdmin()
+        || (isSignedIn() && request.auth.uid == uid
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                  .hasAny(['role', 'enabled', 'module']));
+
+      allow delete: if isSuperAdmin();
+
+      // Per-user notice read markers: strictly the owner.
+      match /noticeReads/{noticeId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // ---- notices/{noticeId} ------------------------------------------------
+    match /notices/{noticeId} {
+      // Any signed-in, enabled member can read published content.
+      allow read: if isEnabled();
+
+      // SUPER_ADMIN publishes GLOBAL notices; department admins publish only
+      // their own module, stamped with their own uid and role.
+      allow create: if (
+          isSuperAdmin()
+          && request.resource.data.module == 'GLOBAL'
+          && request.resource.data.ownerRole == 'SUPER_ADMIN'
+          && request.resource.data.createdBy == request.auth.uid
+        ) || (
+          isDepartmentAdmin()
+          && request.resource.data.ownerRole == currentRole()
+          && request.resource.data.module == moduleForRole(currentRole())
+          && request.resource.data.createdBy == request.auth.uid
+        );
+
+      // SUPER_ADMIN manages everything; department admins manage only their
+      // module's existing notices and cannot change ownership fields to
+      // escalate their authority.
+      allow update: if isSuperAdmin()
+        || (isDepartmentAdmin()
+            && resource.data.module == moduleForRole(currentRole())
+            && resource.data.ownerRole == currentRole()
+            && request.resource.data.module == resource.data.module
+            && request.resource.data.ownerRole == resource.data.ownerRole
+            && request.resource.data.createdBy == resource.data.createdBy);
+
+      allow delete: if isSuperAdmin()
+        || (isDepartmentAdmin()
+            && resource.data.module == moduleForRole(currentRole())
+            && resource.data.ownerRole == currentRole());
+    }
+  }
+}

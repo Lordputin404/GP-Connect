@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.gumlapolytechnic.gpconnect.data.model.User
+import com.gumlapolytechnic.gpconnect.data.model.UserRole
 
 /** Routes for the admin navigation graph (no bottom bar — top app bars only). */
 object AdminRoutes {
@@ -12,19 +13,23 @@ object AdminRoutes {
     const val CREATE_NOTICE = "admin-create-notice"
     const val EDIT_NOTICE = "admin-edit/{noticeId}"
     const val EDIT_NOTICE_ARG = "noticeId"
+    const val ADMIN_MANAGEMENT = "admin-management"
 
     fun editNotice(noticeId: String) = "admin-edit/$noticeId"
 }
 
 /**
- * Admin workspace shell. Completely separate from the student navigation:
- * no bottom navigation, ordinary destinations with top app bars and natural
- * back behavior. Replaced at the composition root the moment the admin
- * session ends, so logout can never leave an authenticated screen behind.
+ * Role-aware admin workspace shell: SUPER_ADMIN gets the global dashboard and
+ * the Admin Management section; department admins (Canteen/Library/Faculty/
+ * Facility) get their own module dashboard and content publishing. Every
+ * destination is top-app-bar based with natural back behavior. The shell is
+ * replaced at the composition root the moment the admin session ends.
  */
 @Composable
 fun AdminApp(user: User, onLogout: () -> Unit) {
     val navController = rememberNavController()
+    val isSuperAdmin = user.role == UserRole.SUPER_ADMIN
+
     NavHost(
         navController = navController,
         startDestination = AdminRoutes.DASHBOARD,
@@ -35,6 +40,11 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                 onLogout = onLogout,
                 onCreateNotice = { navController.navigate(AdminRoutes.CREATE_NOTICE) },
                 onEditNotice = { id -> navController.navigate(AdminRoutes.editNotice(id)) },
+                onOpenAdminManagement = if (isSuperAdmin) {
+                    { navController.navigate(AdminRoutes.ADMIN_MANAGEMENT) }
+                } else {
+                    null
+                },
             )
         }
         composable(AdminRoutes.CREATE_NOTICE) {
@@ -50,6 +60,15 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                 AdminNoticeFormScreen(
                     adminUser = user,
                     editNoticeId = noticeId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+        }
+        // Registered only for SUPER_ADMIN — department admins have no route to it.
+        if (isSuperAdmin) {
+            composable(AdminRoutes.ADMIN_MANAGEMENT) {
+                AdminManagementScreen(
+                    currentUserId = user.id,
                     onBack = { navController.popBackStack() },
                 )
             }

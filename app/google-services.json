@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "907401148374",
+    "project_id": "gp-connect-c0bcd",
+    "storage_bucket": "gp-connect-c0bcd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:907401148374:android:136b0ab2d53b36e3315677",
+        "android_client_info": {
+          "package_name": "com.gumlapolytechnic.gpconnect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIzKKDJ4Qcu7pYcOdOJ-ggD-veu1ZK6gU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

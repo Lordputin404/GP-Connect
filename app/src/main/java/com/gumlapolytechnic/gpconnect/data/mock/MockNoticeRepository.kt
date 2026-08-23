@@ -4,6 +4,7 @@ import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.repository.NoticeDraft
 import com.gumlapolytechnic.gpconnect.data.repository.NoticeQuery
 import com.gumlapolytechnic.gpconnect.data.repository.NoticeRepository
+import com.gumlapolytechnic.gpconnect.data.repository.applyQuery
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -15,11 +16,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
 /**
- * Single in-memory notice store for the whole prototype: student reads and
- * admin CRUD share this source, so every screen reflects the same state.
- * The first collection simulates a short network fetch so loading states are
- * exercised; later re-queries (search, filter, CRUD) answer instantly and
- * reactively. A Firestore implementation replaces this in Phase 4.
+ * Retained mock notice source (migration/testing reference — NOT wired into
+ * the production AppContainer since Phase 4B). Single in-memory reactive
+ * store shared by student reads and admin CRUD.
  */
 class MockNoticeRepository : NoticeRepository {
 
@@ -54,6 +53,9 @@ class MockNoticeRepository : NoticeRepository {
             attachments = draft.attachments,
             author = draft.author,
             createdAt = draft.createdAt,
+            createdBy = "mock",
+            ownerRole = draft.ownerRole,
+            module = draft.module,
         )
         notices.update { list -> listOf(created) + list }
         return created
@@ -82,22 +84,6 @@ class MockNoticeRepository : NoticeRepository {
 
     override suspend fun markRead(noticeId: String) {
         readIds.update { it + noticeId }
-    }
-
-    private fun List<Notice>.applyQuery(query: NoticeQuery): List<Notice> {
-        val term = query.search.trim()
-        return asSequence()
-            .filter { notice -> query.category == null || notice.category == query.category }
-            .filter { notice ->
-                term.isEmpty() ||
-                    notice.title.contains(term, ignoreCase = true) ||
-                    notice.body.contains(term, ignoreCase = true)
-            }
-            .sortedWith(
-                compareByDescending<Notice> { it.isPinned }
-                    .thenByDescending { it.createdAt },
-            )
-            .toList()
     }
 
     private companion object {

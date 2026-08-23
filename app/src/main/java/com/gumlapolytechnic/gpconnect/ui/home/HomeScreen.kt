@@ -113,12 +113,18 @@ fun HomeScreen(
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = stringResource(R.string.course_semester_format, user.course, user.semester),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        user.course?.let { course ->
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = if (user.semester != null) {
+                    stringResource(R.string.course_semester_format, course, user.semester)
+                } else {
+                    course
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 

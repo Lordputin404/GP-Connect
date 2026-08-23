@@ -26,14 +26,14 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             GPConnectTheme {
-                // Root decision: the combined mock session state selects the
-                // login graph, the student app, or the admin app. Because this
-                // is a state switch (not navigation), no authenticated screen
-                // can remain in a back stack after logout, and the student
-                // shell can never appear during an admin session. Splash has
-                // already dismissed; no artificial delays anywhere.
+                // Root decision: the role-resolved Firebase session selects
+                // the login graph, the student app, or the role-aware admin
+                // app. A state switch (not navigation) — no authenticated
+                // screen can remain in a back stack after logout, and the
+                // shells are strictly isolated. Splash has already dismissed;
+                // no artificial delays anywhere.
                 val sessionViewModel: SessionViewModel = viewModel {
-                    SessionViewModel(app.container.authRepository, app.container.adminAuthRepository)
+                    SessionViewModel(app.container.authRepository)
                 }
                 val sessionState by sessionViewModel.sessionState.collectAsStateWithLifecycle()
 
@@ -42,11 +42,11 @@ class MainActivity : ComponentActivity() {
                         SessionState.LoggedOut -> LoginNavHost()
                         is SessionState.StudentActive -> StudentApp(
                             user = state.user,
-                            onLogout = sessionViewModel::logoutStudent,
+                            onLogout = sessionViewModel::logout,
                         )
                         is SessionState.AdminActive -> AdminApp(
                             user = state.user,
-                            onLogout = sessionViewModel::logoutAdmin,
+                            onLogout = sessionViewModel::logout,
                         )
                     }
                 }

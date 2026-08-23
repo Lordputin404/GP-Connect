@@ -3,22 +3,39 @@ package com.gumlapolytechnic.gpconnect.data.repository
 import com.gumlapolytechnic.gpconnect.data.model.User
 import kotlinx.coroutines.flow.StateFlow
 
-/** Outcome of a login attempt. */
+/** Which kind of account the current login form expects. */
+enum class LoginExpectation { STUDENT, ADMIN }
+
+/** Outcome of a login attempt after authentication, profile and role resolution. */
 sealed interface LoginResult {
     data object Success : LoginResult
     data object InvalidCredentials : LoginResult
+    /** Authenticated, but no users/{uid} profile exists — account not set up. */
+    data object AccountNotConfigured : LoginResult
+    /** Profile exists but enabled == false (or the Auth account is disabled). */
+    data object AccountDisabled : LoginResult
+    /** Account exists but its role does not match the login form used. */
+    data object WrongRole : LoginResult
+    /** Network/Firebase unreachable or unknown failure. */
+    data object NetworkError : LoginResult
+    /** Too many attempts — Firebase rate limiting. */
+    data object RateLimited : LoginResult
 }
 
 /**
- * Authentication contract. The UI depends only on this interface; the mock
- * implementation backs the prototype and a Firebase implementation replaces it
- * in Phase 4 without UI changes.
+ * Unified authentication contract (student and admin login share one Firebase
+ * session; only the expected role differs). Firebase Authentication is the
+ * identity source of truth; role/enabled/module come from the Firestore
+ * profile. There is deliberately no mock fallback in the production flow.
  */
 interface AuthRepository {
-    /** The currently signed-in user, or null when signed out. */
-    val authState: StateFlow<User?>
+    /**
+     * The role-resolved, enabled-checked signed-in user, or null when signed
+     * out. Restores automatically from a persisted Firebase session.
+     */
+    val session: StateFlow<User?>
 
-    suspend fun login(username: String, password: String): LoginResult
+    suspend fun login(email: String, password: String, expectation: LoginExpectation): LoginResult
 
     suspend fun logout()
 }

@@ -15,7 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,19 +40,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
+import com.gumlapolytechnic.gpconnect.ui.components.loginErrorMessage
 
 /**
- * Mock administrator sign-in (Phase 3). Deliberately no demo-credential hint
- * in the UI — the mock credentials live isolated in MockAdminAuthRepository.
- * Successful sign-in flips the root session state to the admin app; the top
- * app bar Back returns to the student login.
+ * Administrator sign-in with Firebase Authentication (Phase 4B): the resolved
+ * role (super admin or department admin) routes the admin shell after login.
+ * Useful errors cover missing profiles, disabled accounts and wrong-role
+ * attempts. Top app bar Back returns to the student login.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminLoginScreen(onBack: () -> Unit) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: AdminLoginViewModel =
-        viewModel { AdminLoginViewModel(app.container.adminAuthRepository) }
+        viewModel { AdminLoginViewModel(app.container.authRepository) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -95,25 +96,26 @@ fun AdminLoginScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(
-                value = state.username,
-                onValueChange = viewModel::onUsernameChange,
-                label = { Text(stringResource(R.string.admin_login_username_label)) },
-                leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                isError = state.usernameError,
+                value = state.email,
+                onValueChange = viewModel::onEmailChange,
+                label = { Text(stringResource(R.string.login_email_label)) },
+                leadingIcon = { Icon(Icons.Filled.Mail, contentDescription = null) },
+                isError = state.emailError,
                 supportingText = {
-                    if (state.usernameError) {
-                        Text(stringResource(R.string.error_username_required))
+                    if (state.emailError) {
+                        Text(stringResource(R.string.error_email_required))
                     }
                 },
                 singleLine = true,
                 enabled = !state.isLoading,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
-                label = { Text(stringResource(R.string.admin_login_password_label)) },
+                label = { Text(stringResource(R.string.password_label)) },
                 leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -128,10 +130,10 @@ fun AdminLoginScreen(onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            if (state.credentialsError) {
+            state.error?.let { error ->
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.admin_login_error),
+                    text = loginErrorMessage(error = error, adminForm = true),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )

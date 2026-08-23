@@ -2,7 +2,8 @@ package com.gumlapolytechnic.gpconnect.ui.admin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gumlapolytechnic.gpconnect.data.repository.AdminAuthRepository
+import com.gumlapolytechnic.gpconnect.data.repository.AuthRepository
+import com.gumlapolytechnic.gpconnect.data.repository.LoginExpectation
 import com.gumlapolytechnic.gpconnect.data.repository.LoginResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,60 +12,56 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class AdminLoginUiState(
-    val username: String = "",
+    val email: String = "",
     val password: String = "",
     val isLoading: Boolean = false,
-    val usernameError: Boolean = false,
+    val emailError: Boolean = false,
     val passwordError: Boolean = false,
-    val credentialsError: Boolean = false,
+    val error: LoginResult? = null,
 )
 
 /**
  * Admin sign-in form state machine. On success the root session state flips
- * to AdminActive and the AdminApp replaces this graph — this ViewModel does
- * not navigate. Demo credentials are intentionally not surfaced in the UI.
+ * to AdminActive (with the resolved role) and the AdminApp replaces this
+ * graph — this ViewModel does not navigate.
  */
-class AdminLoginViewModel(private val adminAuthRepository: AdminAuthRepository) : ViewModel() {
+class AdminLoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminLoginUiState())
     val uiState: StateFlow<AdminLoginUiState> = _uiState.asStateFlow()
 
-    fun onUsernameChange(value: String) {
-        _uiState.update {
-            it.copy(username = value, usernameError = false, credentialsError = false)
-        }
+    fun onEmailChange(value: String) {
+        _uiState.update { it.copy(email = value, emailError = false, error = null) }
     }
 
     fun onPasswordChange(value: String) {
-        _uiState.update {
-            it.copy(password = value, passwordError = false, credentialsError = false)
-        }
+        _uiState.update { it.copy(password = value, passwordError = false, error = null) }
     }
 
     fun login() {
         val current = _uiState.value
-        val usernameBlank = current.username.isBlank()
+        val emailBlank = current.email.isBlank()
         val passwordBlank = current.password.isBlank()
-        if (usernameBlank || passwordBlank) {
+        if (emailBlank || passwordBlank) {
             _uiState.update {
-                it.copy(
-                    usernameError = usernameBlank,
-                    passwordError = passwordBlank,
-                    credentialsError = false,
-                )
+                it.copy(emailError = emailBlank, passwordError = passwordBlank, error = null)
             }
             return
         }
 
         _uiState.update {
-            it.copy(isLoading = true, usernameError = false, passwordError = false, credentialsError = false)
+            it.copy(isLoading = true, emailError = false, passwordError = false, error = null)
         }
         viewModelScope.launch {
-            val result = adminAuthRepository.login(current.username, current.password)
+            val result = authRepository.login(
+                email = current.email,
+                password = current.password,
+                expectation = LoginExpectation.ADMIN,
+            )
             _uiState.update {
                 when (result) {
                     LoginResult.Success -> it.copy(isLoading = false)
-                    LoginResult.InvalidCredentials -> it.copy(isLoading = false, credentialsError = true)
+                    else -> it.copy(isLoading = false, error = result)
                 }
             }
         }
