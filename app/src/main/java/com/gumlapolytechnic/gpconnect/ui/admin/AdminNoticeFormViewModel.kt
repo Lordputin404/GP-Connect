@@ -71,32 +71,35 @@ class AdminNoticeFormViewModel(
     val uiState: StateFlow<NoticeFormUiState> = _uiState.asStateFlow()
 
     init {
-        val id = editNoticeId ?: return
-        viewModelScope.launch {
-            val notice = noticeRepository.getNotice(id)
-            _uiState.update { state ->
-                if (notice == null) {
-                    state.copy(isLoading = false, notFound = true)
-                } else {
-                    state.copy(
-                        isLoading = false,
-                        title = notice.title,
-                        body = notice.body,
-                        category = notice.category,
-                        audienceType = when (notice.audience) {
-                            Audience.All -> AudienceType.ALL
-                            is Audience.Department -> AudienceType.DEPARTMENT
-                            is Audience.Course -> AudienceType.COURSE
-                        },
-                        department = (notice.audience as? Audience.Department)?.department
-                            ?: state.department,
-                        course = (notice.audience as? Audience.Course)?.course ?: state.course,
-                        semesterText = (notice.audience as? Audience.Course)
-                            ?.semester?.toString().orEmpty(),
-                        createdAt = notice.createdAt,
-                        isPinned = notice.isPinned,
-                        attachments = notice.attachments,
-                    )
+        val id = editNoticeId
+        if (id != null) {
+            viewModelScope.launch {
+                val notice = noticeRepository.getNotice(id)
+                _uiState.update { state ->
+                    if (notice == null) {
+                        state.copy(isLoading = false, notFound = true)
+                    } else {
+                        state.copy(
+                            isLoading = false,
+                            title = notice.title,
+                            body = notice.body,
+                            category = notice.category,
+                            audienceType = when (notice.audience) {
+                                Audience.All -> AudienceType.ALL
+                                is Audience.Department -> AudienceType.DEPARTMENT
+                                is Audience.Course -> AudienceType.COURSE
+                            },
+                            department = (notice.audience as? Audience.Department)?.department
+                                ?: state.department,
+                            course = (notice.audience as? Audience.Course)?.course
+                                ?: state.course,
+                            semesterText = (notice.audience as? Audience.Course)
+                                ?.semester?.toString().orEmpty(),
+                            createdAt = notice.createdAt,
+                            isPinned = notice.isPinned,
+                            attachments = notice.attachments,
+                        )
+                    }
                 }
             }
         }
