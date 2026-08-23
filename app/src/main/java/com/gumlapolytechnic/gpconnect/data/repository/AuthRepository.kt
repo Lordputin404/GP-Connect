@@ -20,6 +20,10 @@ sealed interface LoginResult {
     data object NetworkError : LoginResult
     /** Too many attempts — Firebase rate limiting. */
     data object RateLimited : LoginResult
+    /** The Auth provider itself is misconfigured (e.g. Email/Password not enabled). */
+    data object ProviderMisconfigured : LoginResult
+    /** The Firestore profile read failed (e.g. permission denied — rules missing/wrong). */
+    data object ProfileAccessDenied : LoginResult
 }
 
 /**

@@ -18,6 +18,8 @@
     <string name="error_not_admin_account">This is not an administrator account.</string>
     <string name="error_network">Network error — check your connection and try again.</string>
     <string name="error_rate_limited">Too many attempts. Try again later.</string>
+    <string name="error_provider_misconfigured">Sign-in is not configured for this app yet. Contact the administrator.</string>
+    <string name="error_profile_access">Your profile could not be loaded. Contact the administrator (Firestore access was denied).</string>
     <string name="cd_toggle_password">Show or hide password</string>
     <string name="action_admin_login">Admin Login</string>
 

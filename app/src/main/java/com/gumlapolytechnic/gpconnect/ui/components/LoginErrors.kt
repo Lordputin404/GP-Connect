@@ -19,5 +19,7 @@ fun loginErrorMessage(error: LoginResult, adminForm: Boolean): String = when (er
     )
     LoginResult.NetworkError -> stringResource(R.string.error_network)
     LoginResult.RateLimited -> stringResource(R.string.error_rate_limited)
+    LoginResult.ProviderMisconfigured -> stringResource(R.string.error_provider_misconfigured)
+    LoginResult.ProfileAccessDenied -> stringResource(R.string.error_profile_access)
     LoginResult.Success -> ""
 }
