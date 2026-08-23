@@ -16,10 +16,56 @@
     <string name="cd_toggle_password">Show or hide password</string>
     <string name="action_admin_login">Admin Login</string>
 
-    <!-- Admin portal (Phase 2 entry point only) -->
+    <!-- Admin portal (Phase 3, mock authentication) -->
     <string name="admin_portal_title">Admin Portal</string>
-    <string name="admin_portal_body">Admin dashboard will be available in the next phase.</string>
-    <string name="admin_portal_note">Administrator sign-in arrives with Phase 3.</string>
+    <string name="admin_login_username_label">Username</string>
+    <string name="admin_login_password_label">Password</string>
+    <string name="admin_login_error">Invalid administrator credentials</string>
+
+    <!-- Admin dashboard -->
+    <string name="admin_dashboard_welcome">Welcome, Administrator</string>
+    <string name="admin_stat_total">Total notices</string>
+    <string name="admin_stat_pinned">Pinned</string>
+    <string name="admin_stat_recent">Recent</string>
+    <string name="admin_action_create_notice">Create Notice</string>
+    <string name="admin_section_manage">Manage notices</string>
+    <string name="admin_dashboard_empty_title">No notices yet</string>
+    <string name="admin_dashboard_empty_body">Create the first notice for the college.</string>
+    <string name="admin_dashboard_error">Notices could not be loaded.</string>
+    <string name="admin_cd_logout">Logout</string>
+    <string name="admin_delete_title">Delete this notice?</string>
+    <string name="admin_action_delete">Delete</string>
+    <string name="admin_action_cancel">Cancel</string>
+    <string name="admin_action_edit">Edit</string>
+    <string name="admin_action_pin">Pin</string>
+    <string name="admin_action_unpin">Unpin</string>
+
+    <!-- Admin notice form (create + edit) -->
+    <string name="admin_form_create_title">Create Notice</string>
+    <string name="admin_form_edit_title">Edit Notice</string>
+    <string name="admin_form_field_title">Title</string>
+    <string name="admin_form_field_body">Body</string>
+    <string name="admin_form_field_category">Category</string>
+    <string name="admin_form_field_audience">Audience</string>
+    <string name="admin_form_field_date">Date</string>
+    <string name="admin_form_field_pinned">Pinned to top</string>
+    <string name="admin_form_field_attachments">Attachments</string>
+    <string name="admin_form_attachments_empty">No attachments.</string>
+    <string name="admin_form_add_attachment">Add attachment</string>
+    <string name="admin_form_attachment_hint">Attachment file name (demo)</string>
+    <string name="admin_form_attachment_add">Add</string>
+    <string name="admin_form_attachment_remove">Remove attachment</string>
+    <string name="admin_form_error_title_required">Title is required</string>
+    <string name="admin_form_error_body_required">Body is required</string>
+    <string name="admin_form_error_semester">Enter a semester from 1 to 6</string>
+    <string name="admin_form_semester_label">Semester (optional)</string>
+    <string name="admin_form_date_change">Change</string>
+    <string name="admin_form_date_confirm">OK</string>
+    <string name="admin_form_saving">Saving…</string>
+    <string name="admin_form_action_save">Save</string>
+    <string name="admin_audience_all">All students</string>
+    <string name="admin_audience_department">Department</string>
+    <string name="admin_audience_course">Course</string>
 
     <!-- Bottom navigation -->
     <string name="tab_home">Home</string>

@@ -1,9 +1,11 @@
 package com.gumlapolytechnic.gpconnect
 
 import android.app.Application
+import com.gumlapolytechnic.gpconnect.data.mock.MockAdminAuthRepository
 import com.gumlapolytechnic.gpconnect.data.mock.MockAuthRepository
 import com.gumlapolytechnic.gpconnect.data.mock.MockEventPreviews
 import com.gumlapolytechnic.gpconnect.data.mock.MockNoticeRepository
+import com.gumlapolytechnic.gpconnect.data.repository.AdminAuthRepository
 import com.gumlapolytechnic.gpconnect.data.repository.AuthRepository
 import com.gumlapolytechnic.gpconnect.data.repository.NoticeRepository
 
@@ -14,6 +16,7 @@ import com.gumlapolytechnic.gpconnect.data.repository.NoticeRepository
  */
 class AppContainer {
     val authRepository: AuthRepository = MockAuthRepository()
+    val adminAuthRepository: AdminAuthRepository = MockAdminAuthRepository()
     val noticeRepository: NoticeRepository = MockNoticeRepository()
 
     /** Phase 6 replaces this preview list with the real Events module. */

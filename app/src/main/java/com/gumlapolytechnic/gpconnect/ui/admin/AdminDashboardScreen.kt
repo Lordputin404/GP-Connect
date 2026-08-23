@@ -1,0 +1,348 @@
+package com.gumlapolytechnic.gpconnect.ui.admin
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gumlapolytechnic.gpconnect.GPConnectApplication
+import com.gumlapolytechnic.gpconnect.R
+import com.gumlapolytechnic.gpconnect.data.model.Notice
+import com.gumlapolytechnic.gpconnect.data.model.User
+import com.gumlapolytechnic.gpconnect.ui.components.CategoryBadge
+import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
+import com.gumlapolytechnic.gpconnect.ui.components.ErrorState
+import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
+import com.gumlapolytechnic.gpconnect.ui.components.SectionHeader
+import com.gumlapolytechnic.gpconnect.util.Dates
+
+/**
+ * Admin dashboard: top app bar with logout, welcome block, overview counters
+ * (total / pinned / recent), a prominent Create Notice action, and the full
+ * notice management list with edit, delete (confirmed) and pin/unpin.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminDashboardScreen(
+    adminUser: User,
+    onLogout: () -> Unit,
+    onCreateNotice: () -> Unit,
+    onEditNotice: (String) -> Unit,
+) {
+    val app = LocalContext.current.applicationContext as GPConnectApplication
+    val viewModel: AdminDashboardViewModel =
+        viewModel { AdminDashboardViewModel(app.container.noticeRepository) }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var noticePendingDelete by remember { mutableStateOf<Notice?>(null) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.admin_portal_title)) },
+                actions = {
+                    IconButton(onClick = onLogout) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = stringResource(R.string.admin_cd_logout),
+                        )
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        when {
+            state.isLoading -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    repeat(5) { NoticeCardShimmer() }
+                }
+            }
+            state.isError -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    ErrorState(
+                        message = stringResource(R.string.admin_dashboard_error),
+                        onRetry = viewModel::retry,
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = 24.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    item {
+                        // --- Welcome + overview ------------------------------------
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.admin_dashboard_welcome),
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = adminUser.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            StatCard(
+                                label = stringResource(R.string.admin_stat_total),
+                                value = state.totalNotices,
+                                modifier = Modifier.weight(1f),
+                            )
+                            StatCard(
+                                label = stringResource(R.string.admin_stat_pinned),
+                                value = state.pinnedNotices,
+                                modifier = Modifier.weight(1f),
+                            )
+                            StatCard(
+                                label = stringResource(R.string.admin_stat_recent),
+                                value = state.recentNotices,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = onCreateNotice,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.admin_action_create_notice))
+                        }
+                        Spacer(modifier = Modifier.height(20.dp))
+                        SectionHeader(title = stringResource(R.string.admin_section_manage))
+                    }
+
+                    if (state.notices.isEmpty()) {
+                        item {
+                            EmptyState(
+                                title = stringResource(R.string.admin_dashboard_empty_title),
+                                message = stringResource(R.string.admin_dashboard_empty_body),
+                            )
+                        }
+                    } else {
+                        items(state.notices, key = { it.id }) { notice ->
+                            AdminNoticeCard(
+                                notice = notice,
+                                onEdit = { onEditNotice(notice.id) },
+                                onDelete = { noticePendingDelete = notice },
+                                onTogglePin = { viewModel.togglePinned(notice) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (noticePendingDelete != null) {
+        val notice = noticePendingDelete!!
+        AlertDialog(
+            onDismissRequest = { noticePendingDelete = null },
+            title = { Text(stringResource(R.string.admin_delete_title)) },
+            text = {
+                Text(
+                    text = notice.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteNotice(notice.id)
+                        noticePendingDelete = null
+                    },
+                ) {
+                    Text(
+                        text = stringResource(R.string.admin_action_delete),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { noticePendingDelete = null }) {
+                    Text(stringResource(R.string.admin_action_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 14.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = value.toString(),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminNoticeCard(
+    notice: Notice,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onTogglePin: () -> Unit,
+) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CategoryBadge(category = notice.category)
+                    if (notice.isPinned) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Filled.PushPin,
+                            contentDescription = stringResource(R.string.cd_pinned),
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+                Text(
+                    text = Dates.format(notice.createdAt),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = notice.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(onClick = onTogglePin) {
+                    Icon(
+                        imageVector = Icons.Filled.PushPin,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(
+                            if (notice.isPinned) R.string.admin_action_unpin else R.string.admin_action_pin,
+                        ),
+                    )
+                }
+                TextButton(onClick = onEdit) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.admin_action_edit))
+                }
+                TextButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.admin_action_delete),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+    }
+}
