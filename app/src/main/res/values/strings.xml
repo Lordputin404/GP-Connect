@@ -3,4 +3,42 @@
     <string name="college_name">Gumla Polytechnic</string>
     <string name="app_tagline">Your Campus. Your Information. One Place.</string>
     <string name="cd_college_logo">Gumla Polytechnic official logo</string>
+
+    <!-- Login -->
+    <string name="username_label">Username or email</string>
+    <string name="password_label">Password</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="signing_in">Signing in…</string>
+    <string name="error_username_required">Enter your username or email</string>
+    <string name="error_password_required">Enter your password</string>
+    <string name="error_invalid_credentials">Incorrect username or password</string>
+    <string name="demo_credentials_hint">Demo student — username: amar · password: demo1234</string>
+    <string name="cd_toggle_password">Show or hide password</string>
+
+    <!-- Bottom navigation -->
+    <string name="tab_home">Home</string>
+    <string name="tab_notices">Notices</string>
+    <string name="tab_calendar">Calendar</string>
+    <string name="tab_profile">Profile</string>
+
+    <!-- Home -->
+    <string name="welcome_back">Welcome back</string>
+    <string name="course_semester_format">%1$s · Semester %2$d</string>
+    <string name="home_dashboard_teaser_title">Home dashboard · Phase 2</string>
+    <string name="home_dashboard_teaser_body">Important updates, upcoming events and quick access to campus services will appear here.</string>
+
+    <!-- Notices placeholder -->
+    <string name="notices_placeholder_title">Notices</string>
+    <string name="notices_placeholder_body">Official college notices with categories, search and read status arrive in Phase 2.</string>
+
+    <!-- Calendar placeholder -->
+    <string name="calendar_placeholder_title">Calendar</string>
+    <string name="calendar_placeholder_body">The academic calendar and events arrive in a later phase.</string>
+
+    <!-- Profile -->
+    <string name="profile_department_label">Department</string>
+    <string name="profile_roll_no_label">Roll number</string>
+    <string name="profile_role_label">Role</string>
+    <string name="profile_role_student">Student</string>
+    <string name="profile_logout">Logout</string>
 </resources>
