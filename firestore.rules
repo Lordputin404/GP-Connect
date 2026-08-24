@@ -37,6 +37,10 @@ service cloud.firestore {
       return isEnabled() && currentRole() == 'SUPER_ADMIN';
     }
 
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
     function isDepartmentAdmin() {
       return isEnabled() &&
         currentRole() in ['LIBRARY_ADMIN', 'CANTEEN_ADMIN', 'FACULTY_ADMIN', 'FACILITY_ADMIN'];
@@ -52,8 +56,11 @@ service cloud.firestore {
 
     // ---- users/{uid} -------------------------------------------------------
     match /users/{uid} {
-      // Own profile or SUPER_ADMIN (admin management list/reads).
-      allow read: if isSignedIn() && (request.auth.uid == uid || isSuperAdmin());
+      // A signed-in user may GET their own profile; SUPER_ADMIN may get any.
+      // Only SUPER_ADMIN may enumerate the collection (list) — students can
+      // never read other users' profiles.
+      allow get: if isSelf(uid) || isSuperAdmin();
+      allow list: if isSuperAdmin();
 
       // Profiles are created during bootstrap (console/Admin SDK), or by a
       // super admin for a freshly created auth account.
