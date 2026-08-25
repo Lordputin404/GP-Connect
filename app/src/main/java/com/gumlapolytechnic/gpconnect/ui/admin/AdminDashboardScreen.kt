@@ -1,5 +1,6 @@
 package com.gumlapolytechnic.gpconnect.ui.admin
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -190,7 +191,13 @@ fun AdminDashboardScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Horizontal scroll keeps every chip at its
+                            // intrinsic width — the last chip ("Global: 0")
+                            // must never be squeezed into leftover space.
+                            Row(
+                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
                                 state.noticesByModule.forEach { (module, count) ->
                                     ModuleCountChip(module = module, count = count)
                                 }

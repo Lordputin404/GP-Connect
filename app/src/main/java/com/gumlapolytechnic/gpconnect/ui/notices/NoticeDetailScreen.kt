@@ -1,5 +1,6 @@
 package com.gumlapolytechnic.gpconnect.ui.notices
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -66,6 +67,10 @@ fun NoticeDetailScreen(noticeId: String, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
+                // Status-bar inset is already consumed by the outer student
+                // Scaffold's content padding; applying the default insets
+                // here would double-pad the bar and push it too low.
+                windowInsets = WindowInsets(0.dp),
                 title = { Text(stringResource(R.string.notice_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
