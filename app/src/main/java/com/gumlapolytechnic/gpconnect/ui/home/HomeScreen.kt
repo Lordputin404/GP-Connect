@@ -299,4 +299,4 @@ private fun QuickAccessGrid(onFeatureClick: (CampusFeature) -> Unit) {
     }
 }
 
-private const val QUICK_ACCESS_COLUMNS = 3
+private const val QUICK_ACCESS_COLUMNS = 2

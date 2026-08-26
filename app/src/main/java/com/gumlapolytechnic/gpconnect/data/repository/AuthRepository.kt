@@ -39,6 +39,14 @@ interface AuthRepository {
      */
     val session: StateFlow<User?>
 
+    /**
+     * True while startup session restoration is still deciding whether a
+     * persisted Firebase user exists and resolves. The root must show a
+     * checking state (not the login screen) while this is true, so a stored
+     * session never flashes LoginScreen before Home/Admin appears.
+     */
+    val isResolvingSession: StateFlow<Boolean>
+
     suspend fun login(email: String, password: String, expectation: LoginExpectation): LoginResult
 
     suspend fun logout()

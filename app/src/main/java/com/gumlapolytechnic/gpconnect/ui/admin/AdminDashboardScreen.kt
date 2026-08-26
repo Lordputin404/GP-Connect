@@ -194,12 +194,16 @@ fun AdminDashboardScreen(
                             // Horizontal scroll keeps every chip at its
                             // intrinsic width — the last chip ("Global: 0")
                             // must never be squeezed into leftover space.
+                            // FACILITY is excluded: the Facilities section is
+                            // retired from the UI (role infra remains).
                             Row(
                                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 state.noticesByModule.forEach { (module, count) ->
-                                    ModuleCountChip(module = module, count = count)
+                                    if (module != AdminModule.FACILITY) {
+                                        ModuleCountChip(module = module, count = count)
+                                    }
                                 }
                             }
                         } else {

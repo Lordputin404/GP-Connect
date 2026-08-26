@@ -152,14 +152,10 @@
     <string name="feature_library_description">Browse, search and track library books, timings and new arrivals.</string>
     <string name="feature_canteen_title">Canteen</string>
     <string name="feature_canteen_description">Menus, timings and daily specials from the campus canteen.</string>
-    <string name="feature_facilities_title">Facilities</string>
-    <string name="feature_facilities_description">Labs, workshops, sports and other campus facilities.</string>
     <string name="feature_departments_title">Departments</string>
     <string name="feature_departments_description">Explore departments, courses and their activities.</string>
     <string name="feature_faculty_title">Faculty</string>
     <string name="feature_faculty_description">Faculty members, subjects and office hours.</string>
-    <string name="feature_campus_map_title">Campus Map</string>
-    <string name="feature_campus_map_description">Find your way around the Gumla Polytechnic campus.</string>
     <string name="feature_phase_note">Available in a later phase</string>
 
     <!-- Calendar placeholder (full calendar arrives in a later phase) -->

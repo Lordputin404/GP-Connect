@@ -40,13 +40,18 @@ class FirebaseAuthRepository : AuthRepository {
     private val _session = MutableStateFlow<User?>(null)
     override val session: StateFlow<User?> = _session.asStateFlow()
 
+    private val _isResolvingSession = MutableStateFlow(true)
+    override val isResolvingSession: StateFlow<Boolean> = _isResolvingSession.asStateFlow()
+
     init {
         // Restores a persisted Firebase session at app start (and observes
         // sign-out). Profile problems end the session rather than guessing a
-        // role.
+        // role. Every resolution path clears isResolvingSession so the root
+        // never waits on a stale checking state.
         auth.addAuthStateListener { firebaseAuth ->
             val firebaseUser = firebaseAuth.currentUser
             if (firebaseUser == null) {
+                _isResolvingSession.value = false
                 _session.value = null
             } else {
                 scope.launch {
@@ -74,6 +79,7 @@ class FirebaseAuthRepository : AuthRepository {
                             _session.value = profile
                         }
                     }
+                    _isResolvingSession.value = false
                 }
             }
         }

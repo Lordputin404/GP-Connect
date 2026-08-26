@@ -13,9 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Construction
 import androidx.compose.material.icons.outlined.Domain
-import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Restaurant
@@ -49,10 +47,8 @@ enum class CampusFeature(
 ) {
     LIBRARY("library", R.string.feature_library_title, R.string.feature_library_description, Icons.Outlined.MenuBook),
     CANTEEN("canteen", R.string.feature_canteen_title, R.string.feature_canteen_description, Icons.Outlined.Restaurant),
-    FACILITIES("facilities", R.string.feature_facilities_title, R.string.feature_facilities_description, Icons.Outlined.Construction),
-    DEPARTMENTS("departments", R.string.feature_departments_title, R.string.feature_departments_description, Icons.Outlined.Domain),
     FACULTY("faculty", R.string.feature_faculty_title, R.string.feature_faculty_description, Icons.Outlined.Groups),
-    CAMPUS_MAP("campus-map", R.string.feature_campus_map_title, R.string.feature_campus_map_description, Icons.Outlined.Explore);
+    DEPARTMENTS("departments", R.string.feature_departments_title, R.string.feature_departments_description, Icons.Outlined.Domain);
 
     companion object {
         fun fromRouteArg(arg: String?): CampusFeature? = entries.firstOrNull { it.routeArg == arg }
