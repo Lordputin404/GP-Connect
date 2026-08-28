@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -56,10 +57,13 @@ import com.gumlapolytechnic.gpconnect.ui.components.loginErrorMessage
  * Student sign-in screen with Firebase Authentication (Phase 4B): branded
  * header, email + password form, blank-field validation, friendly Firebase
  * error messages and a loading state. "Admin Login" remains the deliberate
- * secondary entry point.
+ * secondary entry point; "Create an account" opens the signup request form.
+ *
+ * The form accepts both STUDENT and TEACHER accounts — they share the same
+ * non-administrative shell.
  */
 @Composable
-fun StudentLoginScreen(onAdminLoginClick: () -> Unit) {
+fun StudentLoginScreen(onAdminLoginClick: () -> Unit, onSignupClick: () -> Unit) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: LoginViewModel = viewModel { LoginViewModel(app.container.authRepository) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -183,7 +187,22 @@ fun StudentLoginScreen(onAdminLoginClick: () -> Unit) {
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        TextButton(
+            onClick = onSignupClick,
+            enabled = !state.isLoading,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.PersonAdd,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.action_create_account))
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
         TextButton(
             onClick = onAdminLoginClick,
             modifier = Modifier.align(Alignment.CenterHorizontally),

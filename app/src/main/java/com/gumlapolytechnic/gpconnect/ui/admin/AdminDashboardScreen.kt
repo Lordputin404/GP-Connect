@@ -23,6 +23,8 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.HowToReg
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -68,6 +70,8 @@ import com.gumlapolytechnic.gpconnect.util.Dates
  * admins, notices), notices-by-module breakdown, Create Notice, Admin
  * Management and the full notice list. Department admins: welcome with their
  * module, module counters, Create Notice and their module's notice list only.
+ * An HOD (FACULTY_ADMIN with a department) additionally gets their department's
+ * signup request inbox and teacher management.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,6 +81,8 @@ fun AdminDashboardScreen(
     onCreateNotice: () -> Unit,
     onEditNotice: (String) -> Unit,
     onOpenAdminManagement: (() -> Unit)?,
+    onOpenSignupRequests: (() -> Unit)?,
+    onOpenTeachers: (() -> Unit)?,
 ) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: AdminDashboardViewModel = viewModel {
@@ -84,6 +90,7 @@ fun AdminDashboardScreen(
             adminUser = adminUser,
             noticeRepository = app.container.noticeRepository,
             userRepository = app.container.userRepository,
+            signupRequestRepository = app.container.signupRequestRepository,
         )
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -184,6 +191,15 @@ fun AdminDashboardScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.admin_stat_pending_requests,
+                                    state.pendingRequests,
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
                                 text = stringResource(R.string.admin_stat_by_module),
@@ -218,6 +234,19 @@ fun AdminDashboardScreen(
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
+                            // An HOD's whole workspace is scoped to one
+                            // department, so name it before the counters.
+                            state.department?.let { department ->
+                                Text(
+                                    text = stringResource(
+                                        R.string.admin_department_intro,
+                                        department.displayName,
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 StatCard(
                                     label = stringResource(R.string.admin_stat_notices),
@@ -229,6 +258,13 @@ fun AdminDashboardScreen(
                                     value = state.pinnedNotices,
                                     modifier = Modifier.weight(1f),
                                 )
+                                if (state.isHod) {
+                                    StatCard(
+                                        label = stringResource(R.string.admin_stat_pending),
+                                        value = state.pendingRequests,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
                             }
                         }
 
@@ -255,6 +291,45 @@ fun AdminDashboardScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.admin_management_title))
+                            }
+                        }
+                        if (onOpenSignupRequests != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = onOpenSignupRequests,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.HowToReg,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (state.pendingRequests > 0) {
+                                        stringResource(
+                                            R.string.admin_requests_title_count,
+                                            state.pendingRequests,
+                                        )
+                                    } else {
+                                        stringResource(R.string.admin_requests_title)
+                                    },
+                                )
+                            }
+                        }
+                        if (onOpenTeachers != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = onOpenTeachers,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.School,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.admin_teachers_title))
                             }
                         }
                         Spacer(modifier = Modifier.height(20.dp))

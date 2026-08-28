@@ -27,7 +27,7 @@
     <string name="role_super_admin">Super Admin</string>
     <string name="role_canteen_admin">Canteen Admin</string>
     <string name="role_library_admin">Library Admin</string>
-    <string name="role_faculty_admin">Faculty Admin</string>
+    <string name="role_faculty_admin">HOD (Faculty Admin)</string>
     <string name="role_facility_admin">Facility Admin</string>
     <string name="module_library">Library</string>
     <string name="module_canteen">Canteen</string>
@@ -168,4 +168,87 @@
     <string name="profile_role_label">Role</string>
     <string name="profile_role_student">Student</string>
     <string name="profile_logout">Logout</string>
+
+    <!-- Roles (new) -->
+    <string name="role_teacher">Teacher</string>
+
+    <!-- Shared form labels -->
+    <string name="label_course">Course</string>
+    <string name="label_semester">Semester</string>
+
+    <!-- Signup (student / teacher self-registration) -->
+    <string name="action_create_account">Create account</string>
+    <string name="signup_title">Create Account</string>
+    <string name="signup_intro">Submit a signup request to your department HOD. You will be notified once it is reviewed.</string>
+    <string name="signup_field_role">I am a</string>
+    <string name="signup_field_name">Full name</string>
+    <string name="signup_field_confirm_password">Confirm password</string>
+    <string name="signup_password_hint">At least 6 characters</string>
+    <string name="signup_field_department">Department</string>
+    <string name="signup_field_course">Course</string>
+    <string name="signup_field_semester">Semester</string>
+    <string name="signup_course_pick_department">Select a department first</string>
+    <string name="signup_error_name">Enter your full name</string>
+    <string name="signup_error_email">Enter a valid email address</string>
+    <string name="signup_error_password">Password must be at least 6 characters</string>
+    <string name="signup_error_confirm_password">Passwords do not match</string>
+    <string name="signup_error_department">Select your department</string>
+    <string name="signup_error_course">Select your course</string>
+    <string name="signup_error_roll_no">Enter your roll number</string>
+    <string name="signup_submit">Submit request</string>
+    <string name="signup_submitting">Submitting…</string>
+    <string name="signup_success_title">Request submitted</string>
+    <string name="signup_success_body">Your signup request has been sent to your department HOD. You will be able to log in once it is approved.</string>
+    <string name="signup_back_to_login">Back to login</string>
+    <string name="signup_error_email_in_use">An account with this email already exists.</string>
+    <string name="signup_error_rejected">Your signup request was rejected. Contact your department HOD.</string>
+    <string name="signup_error_unknown">Something went wrong. Please try again.</string>
+
+    <!-- Admin shared actions -->
+    <string name="admin_action_dismiss">Dismiss</string>
+
+    <!-- Admin: assign role dialog -->
+    <string name="admin_assign_department_label">Department</string>
+
+    <!-- Admin dashboard (department view) -->
+    <string name="admin_department_intro">You manage the %1$s department.</string>
+    <string name="admin_stat_pending">Pending requests</string>
+    <string name="admin_stat_pending_requests">Pending: %1$d</string>
+
+    <!-- Admin: signup request inbox -->
+    <string name="admin_requests_title">Signup Requests</string>
+    <string name="admin_requests_title_count">Requests (%1$d)</string>
+    <string name="admin_requests_error">Requests could not be loaded.</string>
+    <string name="admin_requests_empty_title">No pending requests</string>
+    <string name="admin_requests_empty_body">New signup requests from your department will appear here.</string>
+    <string name="admin_requests_scope_department">Showing requests for %1$s</string>
+    <string name="admin_requests_scope_all">Showing all requests (college-wide)</string>
+    <string name="admin_requests_action_failed">Action failed. Check your connection and permissions.</string>
+    <string name="admin_requests_reject_title">Reject request</string>
+    <string name="admin_requests_reject_note">Reason for rejection (optional)</string>
+    <string name="admin_requests_reject">Reject</string>
+    <string name="admin_requests_approve">Approve</string>
+    <string name="admin_requests_working">Working…</string>
+    <string name="admin_requests_submitted_label">Submitted</string>
+    <string name="admin_requests_note_label">Note</string>
+    <string name="admin_requests_status_pending">Pending</string>
+    <string name="admin_requests_status_approved">Approved</string>
+    <string name="admin_requests_status_rejected">Rejected</string>
+
+    <!-- Admin: teacher management -->
+    <string name="admin_teachers_title">Teacher Management</string>
+    <string name="admin_teachers_scope">Managing %1$s</string>
+    <string name="admin_teachers_error">Members could not be loaded.</string>
+    <string name="admin_teachers_empty_title">No members yet</string>
+    <string name="admin_teachers_empty_body">Approved students and teachers in your department will appear here.</string>
+    <string name="admin_teachers_no_department_title">No department assigned</string>
+    <string name="admin_teachers_no_department_body">Your account does not have a department assigned. Contact the Super Admin.</string>
+    <string name="admin_teachers_section_teachers">Teachers (%1$d)</string>
+    <string name="admin_teachers_section_students">Students (%1$d)</string>
+    <string name="admin_teachers_none">No teachers in this department yet.</string>
+    <string name="admin_teachers_no_students">No students in this department yet.</string>
+    <string name="admin_teachers_promote">Promote to Teacher</string>
+    <string name="admin_teachers_demote">Demote to Student</string>
+    <string name="admin_teachers_semester">Sem %1$d</string>
+    <string name="admin_teachers_action_failed">Action failed. Check your connection and permissions.</string>
 </resources>

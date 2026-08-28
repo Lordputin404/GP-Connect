@@ -1,10 +1,8 @@
 package com.gumlapolytechnic.gpconnect.ui.admin
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -55,10 +53,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.Attachment
+import com.gumlapolytechnic.gpconnect.data.model.Course
+import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.components.CategoryChip
+import com.gumlapolytechnic.gpconnect.ui.components.ChipRow
 import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
+import com.gumlapolytechnic.gpconnect.ui.components.FieldLabel
 import com.gumlapolytechnic.gpconnect.ui.components.labelRes
 import com.gumlapolytechnic.gpconnect.util.Dates
 
@@ -223,7 +225,7 @@ fun AdminNoticeFormScreen(
                             ChipRow {
                                 state.departments.forEach { department ->
                                     CategoryChip(
-                                        label = department,
+                                        label = Department.labelFor(department),
                                         selected = state.department == department,
                                         onClick = { viewModel.onDepartmentChange(department) },
                                     )
@@ -235,7 +237,7 @@ fun AdminNoticeFormScreen(
                             ChipRow {
                                 state.courses.forEach { course ->
                                     CategoryChip(
-                                        label = course,
+                                        label = Course.labelFor(course),
                                         selected = state.course == course,
                                         onClick = { viewModel.onCourseChange(course) },
                                     )
@@ -427,28 +429,6 @@ fun AdminNoticeFormScreen(
             },
         )
     }
-}
-
-@Composable
-private fun FieldLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-
-/**
- * Horizontally scrolling chip row. Content is a normal composable lambda so
- * callers may resolve strings and emit chips directly.
- */
-@Composable
-private fun ChipRow(content: @Composable RowScope.() -> Unit) {
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        content = content,
-    )
 }
 
 @Composable

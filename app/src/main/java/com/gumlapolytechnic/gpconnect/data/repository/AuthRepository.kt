@@ -1,10 +1,14 @@
 package com.gumlapolytechnic.gpconnect.data.repository
 
+import com.gumlapolytechnic.gpconnect.data.model.SignupSubmission
 import com.gumlapolytechnic.gpconnect.data.model.User
 import kotlinx.coroutines.flow.StateFlow
 
-/** Which kind of account the current login form expects. */
-enum class LoginExpectation { STUDENT, ADMIN }
+/**
+ * Which kind of account the current login form expects. MEMBER covers both
+ * STUDENT and TEACHER — they share the same non-administrative shell.
+ */
+enum class LoginExpectation { MEMBER, ADMIN }
 
 /** Outcome of a login attempt after authentication, profile and role resolution. */
 sealed interface LoginResult {
@@ -24,6 +28,21 @@ sealed interface LoginResult {
     data object ProviderMisconfigured : LoginResult
     /** The Firestore profile read failed (e.g. permission denied — rules missing/wrong). */
     data object ProfileAccessDenied : LoginResult
+}
+
+/** Outcome of a self-service signup attempt. */
+sealed interface RegistrationResult {
+    /** Auth account created, profile + signup request written, session signed out. */
+    data object Success : RegistrationResult
+    data object EmailAlreadyInUse : RegistrationResult
+    data object InvalidEmail : RegistrationResult
+    data object WeakPassword : RegistrationResult
+    data object NetworkError : RegistrationResult
+    data object RateLimited : RegistrationResult
+    data object ProviderMisconfigured : RegistrationResult
+    /** Firestore refused the profile/request write (rules not deployed or wrong). */
+    data object RequestRejected : RegistrationResult
+    data object UnknownFailure : RegistrationResult
 }
 
 /**
@@ -48,6 +67,19 @@ interface AuthRepository {
     val isResolvingSession: StateFlow<Boolean>
 
     suspend fun login(email: String, password: String, expectation: LoginExpectation): LoginResult
+
+    /**
+     * Self-service signup. Creates the Firebase Auth account (the password goes
+     * only to Firebase Auth — never to Firestore), then atomically writes a
+     * **disabled STUDENT** profile at `users/{uid}` plus a PENDING request at
+     * `signupRequests/{uid}` for the department HOD to decide on.
+     *
+     * The applicant is signed out again before this returns: a pending account
+     * must never hold a live session. If the Firestore write fails the freshly
+     * created Auth account is deleted so the applicant can retry with the same
+     * email.
+     */
+    suspend fun register(submission: SignupSubmission, password: String): RegistrationResult
 
     suspend fun logout()
 }

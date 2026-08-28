@@ -31,11 +31,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gumlapolytechnic.gpconnect.R
+import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.User
+import com.gumlapolytechnic.gpconnect.ui.components.roleLabel
 
 /**
- * Phase 1C profile: shows the demo student's information and the mock logout
- * action that clears authentication state and returns to the login screen.
+ * Member profile: the signed-in account's own information (department, course,
+ * roll number and role) plus the logout action that clears the session and
+ * returns to the login screen. Shown for both STUDENT and TEACHER members, so
+ * the role line is read from the profile rather than hardcoded.
  */
 @Composable
 fun ProfileScreen(user: User, onLogout: () -> Unit) {
@@ -63,11 +67,13 @@ fun ProfileScreen(user: User, onLogout: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(4.dp))
         user.course?.let { course ->
+            // Profiles store canonical course ids; render the display label.
+            val courseLabel = user.courseOrNull?.displayName ?: course
             Text(
                 text = if (user.semester != null) {
-                    stringResource(R.string.course_semester_format, course, user.semester)
+                    stringResource(R.string.course_semester_format, courseLabel, user.semester)
                 } else {
-                    course
+                    courseLabel
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -82,12 +88,15 @@ fun ProfileScreen(user: User, onLogout: () -> Unit) {
         ) {
             val infoRows = buildList {
                 user.department?.let { department ->
-                    add(stringResource(R.string.profile_department_label) to department)
+                    add(
+                        stringResource(R.string.profile_department_label) to
+                            Department.labelFor(department),
+                    )
                 }
                 user.rollNo?.let { rollNo ->
                     add(stringResource(R.string.profile_roll_no_label) to rollNo)
                 }
-                add(stringResource(R.string.profile_role_label) to stringResource(R.string.profile_role_student))
+                add(stringResource(R.string.profile_role_label) to roleLabel(user.role))
             }
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 infoRows.forEachIndexed { index, (label, value) ->

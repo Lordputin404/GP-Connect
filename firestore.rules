@@ -1,24 +1,64 @@
 rules_version = '2';
 
-// GP Connect — Firestore Security Rules (Phase 4B)
+// GP Connect — Firestore Security Rules
 //
-// STATUS: authored, NOT yet deployed or penetration-tested. Deploy manually
-// via the Firebase Console (Firestore → Rules) or the Firebase CLI.
+// DEPLOY THIS FILE. The app's permission model is enforced here, not in the UI:
+//   firebase deploy --only firestore:rules
+// (firebase.json in the repo root points at this file.) If the rules in the
+// Firebase Console were edited by hand they will be overwritten — that is the
+// point: the repo is the source of truth.
 //
-// Principles enforced here:
-//  1. Only authenticated users read content.
-//  2. Students (and everyone) cannot mutate user roles/enabled/module.
-//  3. Students cannot create/edit/delete notices.
-//  4. Department admins can only write notices belonging to their module.
-//  5. Department admins cannot modify users documents at all.
-//  6/7. Nobody can promote themselves: role changes require SUPER_ADMIN.
-//  8. SUPER_ADMIN has global administrative authority.
-//  9. Users cannot change their own role/module/enabled state.
+// Authority model
+// ---------------
+//  SUPER_ADMIN    college-wide. Creates/edits administrator accounts, assigns
+//                 the HOD role and its single department, publishes GLOBAL
+//                 notices, sees every signup request.
+//  FACULTY_ADMIN  the HOD of exactly one department (users.department). Reads
+//                 and decides signup requests for that department only, and
+//                 manages STUDENT/TEACHER accounts of that department only.
+//  LIBRARY_ADMIN / CANTEEN_ADMIN / FACILITY_ADMIN
+//                 publish notices for their own module. No user access at all.
+//  TEACHER        a member (not an admin). Reads content, no write authority.
+//  STUDENT        a member. Reads content, no write authority.
+//
+// Invariants
+// ----------
+//  1. Only authenticated users read content; only *enabled* users read notices.
+//  2. Self-registration can only ever create a **disabled STUDENT** profile.
+//     A requested TEACHER role lives on the signup request and is applied by
+//     the HOD on approval, so signup can never mint a teacher or an admin.
+//  3. A user may update only their own displayName. Role, enabled, module,
+//     department, course, semester, rollNo and email are not self-writable.
+//  4. Department isolation is enforced on the *server*: the HOD rules match on
+//     resource.data.department, which forces every client query to carry the
+//     matching `where('department','==',…)` constraint. A tampered client
+//     cannot widen its scope.
+//  5. Nobody can promote themselves. Admin roles are SUPER_ADMIN-only; a HOD
+//     can move a member between STUDENT and TEACHER and nothing else.
+//  6. A signup decision is one-way (PENDING → APPROVED/REJECTED), is attributed
+//     to the deciding uid, and cannot touch any other field of the request.
+//
+// Canonical id allow-lists below mirror the Department / Course enums in
+// data/model/Department.kt. Adding a department or course requires both edits.
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ---- identity helpers --------------------------------------------------
+
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Guards every profile() read below: a signup applicant authenticates
+    // *before* users/{uid} exists, and dereferencing a missing document would
+    // abort rule evaluation instead of simply failing the check.
+    function hasProfile() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
     function profile() {
@@ -26,24 +66,70 @@ service cloud.firestore {
     }
 
     function isEnabled() {
-      return isSignedIn() && profile().enabled == true;
+      return hasProfile() && profile().enabled == true;
     }
 
     function currentRole() {
       return profile().role;
     }
 
-    function isSuperAdmin() {
-      return isEnabled() && currentRole() == 'SUPER_ADMIN';
+    // '' rather than an error when the caller has no department at all.
+    function currentDepartment() {
+      return 'department' in profile() ? profile().department : '';
     }
 
-    function isSelf(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    // ---- vocabulary (mirrors the Kotlin enums) -----------------------------
+
+    function departmentIds() {
+      return [
+        'COMPUTER_APPLICATIONS',
+        'MECHANICAL_ENGINEERING',
+        'CIVIL_ENGINEERING',
+        'MINING_ENGINEERING',
+        'ELECTRICAL_ENGINEERING'
+      ];
+    }
+
+    // Which department offers each course. Mirrors the `department` property of
+    // the Course enum in data/model/Department.kt, so adding a course requires
+    // the same edit there. The map (rather than a flat id list) is what lets the
+    // rules reject a course that exists but belongs to a *different* department
+    // than the one being claimed.
+    function courseDepartments() {
+      return {
+        'BCA': 'COMPUTER_APPLICATIONS',
+        'DIPLOMA_MECHANICAL': 'MECHANICAL_ENGINEERING',
+        'DIPLOMA_CIVIL': 'CIVIL_ENGINEERING',
+        'DIPLOMA_MINING': 'MINING_ENGINEERING',
+        'DIPLOMA_ELECTRICAL': 'ELECTRICAL_ENGINEERING'
+      };
+    }
+
+    function adminRoles() {
+      return ['SUPER_ADMIN', 'CANTEEN_ADMIN', 'LIBRARY_ADMIN', 'FACULTY_ADMIN', 'FACILITY_ADMIN'];
+    }
+
+    function memberRoles() {
+      return ['STUDENT', 'TEACHER'];
+    }
+
+    // ---- role predicates ---------------------------------------------------
+
+    function isSuperAdmin() {
+      return isEnabled() && currentRole() == 'SUPER_ADMIN';
     }
 
     function isDepartmentAdmin() {
       return isEnabled() &&
         currentRole() in ['LIBRARY_ADMIN', 'CANTEEN_ADMIN', 'FACULTY_ADMIN', 'FACILITY_ADMIN'];
+    }
+
+    // A FACULTY_ADMIN is only a HOD once it is bound to a real department;
+    // without one it has no department scope and gets no department authority.
+    function isHod() {
+      return isEnabled() &&
+        currentRole() == 'FACULTY_ADMIN' &&
+        currentDepartment() in departmentIds();
     }
 
     function moduleForRole(role) {
@@ -54,26 +140,112 @@ service cloud.firestore {
         : 'GLOBAL';
     }
 
+    // ---- shared field validation ------------------------------------------
+
+    // A course is only ever valid *together with the department that offers it*.
+    // Checking that the id merely exists would let an applicant in one
+    // department claim another department's course (e.g. a Civil student
+    // submitting `BCA`), which would then be read back as academic identity by
+    // every course-scoped notice audience. The map lookup is itself the
+    // existence check: an unknown course yields '', which can never equal a
+    // department id. An absent `course` stays legal — teacher applicants and
+    // administrators have none.
+    function isOptionalCourseOfDepartment(data, department) {
+      return !('course' in data) ||
+        (data.course is string &&
+          courseDepartments().get(data.course, '') == department);
+    }
+
+    function isOptionalSemester(data) {
+      return !('semester' in data) ||
+        (data.semester is int && data.semester >= 1 && data.semester <= 6);
+    }
+
+    function isOptionalRollNo(data) {
+      return !('rollNo' in data) || (data.rollNo is string && data.rollNo.size() <= 40);
+    }
+
+    function isNonEmptyString(value) {
+      return value is string && value.size() > 0 && value.size() <= 200;
+    }
+
     // ---- users/{uid} -------------------------------------------------------
     match /users/{uid} {
-      // A signed-in user may GET their own profile; SUPER_ADMIN may get any.
-      // Only SUPER_ADMIN may enumerate the collection (list) — students can
-      // never read other users' profiles.
-      allow get: if isSelf(uid) || isSuperAdmin();
-      allow list: if isSuperAdmin();
 
-      // Profiles are created during bootstrap (console/Admin SDK), or by a
-      // super admin for a freshly created auth account.
-      allow create: if isSuperAdmin()
-        && request.resource.data.role in
-             ['SUPER_ADMIN', 'CANTEEN_ADMIN', 'LIBRARY_ADMIN', 'FACULTY_ADMIN', 'FACILITY_ADMIN', 'STUDENT'];
+      // A HOD may read the profiles of its own department. Ordered so a caller
+      // reading its own document never needs a profile lookup at all.
+      function isHodOfThisDepartment() {
+        return isHod() &&
+          'department' in resource.data &&
+          resource.data.department == currentDepartment();
+      }
 
-      // SUPER_ADMIN may change anything; users may only update their own
-      // cosmetic fields — never role, enabled or module.
-      allow update: if isSuperAdmin()
-        || (isSignedIn() && request.auth.uid == uid
-            && !request.resource.data.diff(resource.data).affectedKeys()
-                  .hasAny(['role', 'enabled', 'module']));
+      // Self-registration: a *disabled STUDENT* profile for the caller's own
+      // uid, with the caller's own verified email, in a real department, and
+      // with no other keys — no role/enabled/module escalation is expressible.
+      function isSelfSignupProfile() {
+        return isSelf(uid) &&
+          request.resource.data.keys().hasAll(
+            ['email', 'displayName', 'role', 'enabled', 'department', 'createdAt']
+          ) &&
+          request.resource.data.keys().hasOnly(
+            ['email', 'displayName', 'role', 'enabled', 'department', 'createdAt',
+             'course', 'semester', 'rollNo']
+          ) &&
+          request.resource.data.role == 'STUDENT' &&
+          request.resource.data.enabled == false &&
+          request.resource.data.department in departmentIds() &&
+          request.resource.data.email == request.auth.token.email &&
+          isNonEmptyString(request.resource.data.displayName) &&
+          request.resource.data.createdAt is int &&
+          isOptionalCourseOfDepartment(
+            request.resource.data, request.resource.data.department
+          ) &&
+          isOptionalSemester(request.resource.data) &&
+          isOptionalRollNo(request.resource.data);
+      }
+
+      // Closes the previous "users may update anything except role/enabled/
+      // module" hole: department, course, semester, rollNo and email were
+      // self-writable, which let a student re-home itself under another HOD.
+      function isSelfProfileEdit() {
+        return isSelf(uid) &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['displayName', 'updatedAt']) &&
+          isNonEmptyString(request.resource.data.displayName);
+      }
+
+      // The HOD's only user authority: flip a member between STUDENT and
+      // TEACHER and enable/disable the account — inside its own department.
+      // `department` is not in the writable key set, so a member can never be
+      // moved into or out of a department by a HOD. `module` is not either: it
+      // is display metadata derived from the role, and letting a HOD write an
+      // arbitrary value would put a contradictory module on a member profile.
+      // Nothing reads it for authority, so there is nothing for a HOD to set.
+      function isHodMemberEdit() {
+        return isHodOfThisDepartment() &&
+          resource.data.role in memberRoles() &&
+          request.resource.data.role in memberRoles() &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['role', 'enabled', 'updatedAt']);
+      }
+
+      // Own profile always; SUPER_ADMIN anywhere; a HOD within its department.
+      allow get: if isSelf(uid) || isSuperAdmin() || isHodOfThisDepartment();
+
+      // Enumeration is SUPER_ADMIN-wide or HOD-department-scoped. Because this
+      // rule reads resource.data.department, Firestore rejects any HOD query
+      // that is not filtered to exactly that department.
+      allow list: if isSuperAdmin() ||
+        (isHod() && resource.data.department == currentDepartment());
+
+      // Either the applicant's own pending profile, or a profile provisioned by
+      // a super admin for an account created in the console / Admin SDK.
+      allow create: if isSelfSignupProfile() ||
+        (isSuperAdmin() &&
+          request.resource.data.role in adminRoles().concat(memberRoles()));
+
+      allow update: if isSuperAdmin() || isSelfProfileEdit() || isHodMemberEdit();
 
       allow delete: if isSuperAdmin();
 
@@ -83,9 +255,72 @@ service cloud.firestore {
       }
     }
 
+    // ---- signupRequests/{uid} ---------------------------------------------
+    // One request document per applicant, keyed by the applicant's own uid, so
+    // a second concurrent request for the same account is impossible.
+    match /signupRequests/{uid} {
+
+      function isHodOfThisDepartment() {
+        return isHod() && resource.data.department == currentDepartment();
+      }
+
+      // Written by the applicant during signup, together with the disabled
+      // users/{uid} profile, in one batch. PENDING only, self-attributed, and
+      // with no decision fields — those keys are not in the allow-list.
+      function isSelfRequest() {
+        return isSelf(uid) &&
+          request.resource.data.keys().hasAll(
+            ['uid', 'email', 'displayName', 'requestedRole', 'department', 'status', 'createdAt']
+          ) &&
+          request.resource.data.keys().hasOnly(
+            ['uid', 'email', 'displayName', 'requestedRole', 'department', 'status', 'createdAt',
+             'course', 'semester', 'rollNo']
+          ) &&
+          request.resource.data.uid == uid &&
+          request.resource.data.email == request.auth.token.email &&
+          isNonEmptyString(request.resource.data.displayName) &&
+          request.resource.data.requestedRole in memberRoles() &&
+          request.resource.data.department in departmentIds() &&
+          request.resource.data.status == 'PENDING' &&
+          request.resource.data.createdAt is int &&
+          isOptionalCourseOfDepartment(
+            request.resource.data, request.resource.data.department
+          ) &&
+          isOptionalSemester(request.resource.data) &&
+          isOptionalRollNo(request.resource.data);
+      }
+
+      // A decision is one-way, attributed, and confined to the four decision
+      // keys: the applicant's own claims (department, requested role, roll no)
+      // cannot be rewritten while approving.
+      function isDecision() {
+        return resource.data.status == 'PENDING' &&
+          request.resource.data.status in ['APPROVED', 'REJECTED'] &&
+          request.resource.data.decidedBy == request.auth.uid &&
+          request.resource.data.decidedAt is int &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'decidedAt', 'decidedBy', 'decisionNote']);
+      }
+
+      // The applicant may follow their own request; the HOD sees its own
+      // department; the super admin sees everything.
+      allow get: if isSelf(uid) || isSuperAdmin() || isHodOfThisDepartment();
+
+      // Department-scoped enumeration, server-enforced exactly as for users.
+      allow list: if isSuperAdmin() ||
+        (isHod() && resource.data.department == currentDepartment());
+
+      allow create: if isSelfRequest();
+
+      allow update: if (isSuperAdmin() || isHodOfThisDepartment()) && isDecision();
+
+      allow delete: if isSuperAdmin();
+    }
+
     // ---- notices/{noticeId} ------------------------------------------------
     match /notices/{noticeId} {
-      // Any signed-in, enabled member can read published content.
+      // Any signed-in, enabled member can read published content. A pending
+      // (disabled) applicant therefore reads nothing.
       allow read: if isEnabled();
 
       // SUPER_ADMIN publishes GLOBAL notices; department admins publish only

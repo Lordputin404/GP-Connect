@@ -1,10 +1,11 @@
 package com.gumlapolytechnic.gpconnect.ui.admin
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.data.model.UserRole
-import com.gumlapolytechnic.gpconnect.data.model.departmentModule
 import com.gumlapolytechnic.gpconnect.data.repository.UserRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -43,10 +44,26 @@ class AdminManagementViewModel(
         )
 
     fun setEnabled(uid: String, enabled: Boolean) {
-        viewModelScope.launch { userRepository.setEnabled(uid, enabled) }
+        viewModelScope.launch {
+            // A rules rejection throws; log it instead of crashing the workspace.
+            runCatching { userRepository.setEnabled(uid, enabled) }
+                .onFailure { Log.e(TAG, "setEnabled($uid, $enabled) failed", it) }
+        }
     }
 
-    fun setRole(uid: String, role: UserRole) {
-        viewModelScope.launch { userRepository.setRole(uid, role, role.departmentModule) }
+    /**
+     * Assigns an administrator role. [department] is only meaningful for
+     * FACULTY_ADMIN (the HOD role) — the repository drops it for every other
+     * role so a library or canteen admin can never end up owning a department.
+     */
+    fun setAdminRole(uid: String, role: UserRole, department: Department?) {
+        viewModelScope.launch {
+            runCatching { userRepository.setAdminRole(uid, role, department) }
+                .onFailure { Log.e(TAG, "setAdminRole($uid, $role, $department) failed", it) }
+        }
+    }
+
+    private companion object {
+        const val TAG = "GPAdminManagement"
     }
 }

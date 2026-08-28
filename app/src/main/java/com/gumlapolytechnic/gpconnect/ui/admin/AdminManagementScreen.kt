@@ -44,10 +44,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
+import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.data.model.UserRole
+import com.gumlapolytechnic.gpconnect.data.model.departmentModule
 import com.gumlapolytechnic.gpconnect.ui.components.CategoryChip
 import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
+import com.gumlapolytechnic.gpconnect.ui.components.FieldLabel
 import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
 import com.gumlapolytechnic.gpconnect.ui.components.moduleLabel
 import com.gumlapolytechnic.gpconnect.ui.components.roleLabel
@@ -140,44 +143,91 @@ fun AdminManagementScreen(currentUserId: String, onBack: () -> Unit) {
 
     if (roleTarget != null) {
         val admin = roleTarget!!
-        AlertDialog(
-            onDismissRequest = { roleTarget = null },
-            title = { Text(stringResource(R.string.admin_assign_role_title)) },
-            text = {
-                Column {
-                    Text(
-                        text = admin.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
+        AssignRoleDialog(
+            admin = admin,
+            onDismiss = { roleTarget = null },
+            onConfirm = { role, department ->
+                viewModel.setAdminRole(admin.id, role, department)
+                roleTarget = null
+            },
+        )
+    }
+}
+
+/**
+ * Role assignment for one administrator. FACULTY_ADMIN is the HOD role and each
+ * HOD owns exactly one department, so choosing it reveals a department picker
+ * and the save action stays disabled until a department is chosen. Every other
+ * administrator role has no department at all.
+ */
+@Composable
+private fun AssignRoleDialog(
+    admin: User,
+    onDismiss: () -> Unit,
+    onConfirm: (UserRole, Department?) -> Unit,
+) {
+    var selectedRole by remember(admin.id) { mutableStateOf(admin.role) }
+    var selectedDepartment by remember(admin.id) { mutableStateOf(admin.departmentOrNull) }
+    val needsDepartment = selectedRole == UserRole.FACULTY_ADMIN
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.admin_assign_role_title)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    text = admin.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = admin.email,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                adminRoleChoices().forEach { role ->
+                    CategoryChip(
+                        label = roleLabel(role),
+                        selected = selectedRole == role,
+                        onClick = { selectedRole = role },
+                        modifier = Modifier.padding(vertical = 2.dp),
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = admin.email,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    adminRoleChoices().forEach { role ->
+                }
+                if (needsDepartment) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FieldLabel(stringResource(R.string.admin_assign_department_label))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Department.entries.forEach { department ->
                         CategoryChip(
-                            label = roleLabel(role),
-                            selected = admin.role == role,
-                            onClick = {
-                                viewModel.setRole(admin.id, role)
-                                roleTarget = null
-                            },
+                            label = department.displayName,
+                            selected = selectedDepartment == department,
+                            onClick = { selectedDepartment = department },
                             modifier = Modifier.padding(vertical = 2.dp),
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { roleTarget = null }) {
-                    Text(stringResource(R.string.admin_action_cancel))
-                }
-            },
-        )
-    }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(selectedRole, selectedDepartment.takeIf { needsDepartment })
+                },
+                enabled = !needsDepartment || selectedDepartment != null,
+            ) {
+                Text(stringResource(R.string.admin_form_action_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.admin_action_cancel))
+            }
+        },
+    )
 }
 
 private fun adminRoleChoices(): List<UserRole> = listOf(
@@ -249,7 +299,10 @@ private fun AdminAccountCard(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                 }
-                admin.module?.let { module ->
+                // Derived from the role, not from the stored `module` field: that
+                // field is display metadata that may be stale or missing, so the
+                // chip must never be the thing a reader trusts about authority.
+                admin.role.departmentModule?.let { module ->
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
                         shape = MaterialTheme.shapes.small,
@@ -259,6 +312,22 @@ private fun AdminAccountCard(
                             text = moduleLabel(module),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+                // Only an HOD owns a department, so this chip doubles as the
+                // signal that the department scope has actually been assigned.
+                admin.departmentOrNull?.let { department ->
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                    ) {
+                        Text(
+                            text = department.shortName,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }

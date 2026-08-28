@@ -40,6 +40,8 @@ import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
+import com.gumlapolytechnic.gpconnect.data.model.Course
+import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.ui.components.CategoryBadge
 import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
@@ -225,12 +227,13 @@ private fun NoticeDetailContent(notice: Notice, modifier: Modifier = Modifier) {
 @Composable
 private fun audienceLabel(audience: Audience): String = when (audience) {
     Audience.All -> stringResource(R.string.audience_all_students)
-    is Audience.Department -> audience.department
+    // Notices store canonical ids; show the human label, never "MINING_ENGINEERING".
+    is Audience.Department -> Department.labelFor(audience.department)
     is Audience.Course -> when (audience.semester) {
-        null -> stringResource(R.string.audience_course_format, audience.course)
+        null -> stringResource(R.string.audience_course_format, Course.labelFor(audience.course))
         else -> stringResource(
             R.string.course_semester_format,
-            audience.course,
+            Course.labelFor(audience.course),
             audience.semester,
         )
     }

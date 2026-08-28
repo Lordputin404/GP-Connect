@@ -5,6 +5,9 @@ import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
+import com.gumlapolytechnic.gpconnect.data.model.SignupRequest
+import com.gumlapolytechnic.gpconnect.data.model.SignupRequestStatus
+import com.gumlapolytechnic.gpconnect.data.model.SignupSubmission
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.data.model.UserRole
 import com.google.firebase.firestore.DocumentSnapshot
@@ -29,6 +32,85 @@ internal fun DocumentSnapshot.toUser(): User? {
         semester = (data["semester"] as? Long)?.toInt(),
         department = data.stringOrNull("department"),
     )
+}
+
+internal fun DocumentSnapshot.toSignupRequest(): SignupRequest? {
+    val data = data ?: return null
+    return SignupRequest(
+        uid = data.stringOrNull("uid") ?: id,
+        email = data.string("email"),
+        name = data.string("displayName").ifBlank { data.string("email") },
+        requestedRole = data.string("requestedRole").toRole(),
+        department = data.string("department"),
+        course = data.stringOrNull("course"),
+        semester = (data["semester"] as? Long)?.toInt(),
+        rollNo = data.stringOrNull("rollNo"),
+        status = data.stringOrNull("status").toRequestStatus(),
+        createdAt = data.long("createdAt"),
+        decidedAt = (data["decidedAt"] as? Long),
+        decidedBy = data.stringOrNull("decidedBy"),
+        decisionNote = data.stringOrNull("decisionNote"),
+    )
+}
+
+/**
+ * The `users/{uid}` document written at signup. Always a **disabled STUDENT**,
+ * whatever role was requested: the security rules only ever permit a
+ * self-created profile in that shape, so self-registration cannot mint a
+ * teacher or an administrator. The requested role lives on the signup request
+ * and is applied by the HOD on approval.
+ *
+ * Optional keys are omitted entirely (not written as null) because the rules
+ * validate them with key-presence checks.
+ */
+internal fun pendingMemberProfileFields(
+    submission: SignupSubmission,
+    createdAt: Long,
+): Map<String, Any?> = buildMap {
+    put("email", submission.email)
+    put("displayName", submission.name)
+    put("role", UserRole.STUDENT.name)
+    put("enabled", false)
+    put("department", submission.department.id)
+    put("createdAt", createdAt)
+    submission.course?.let { put("course", it.id) }
+    submission.semester?.let { put("semester", it.toLong()) }
+    submission.rollNo?.takeIf { it.isNotBlank() }?.let { put("rollNo", it) }
+}
+
+/** The PENDING `signupRequests/{uid}` document written at signup. */
+internal fun signupRequestFields(
+    uid: String,
+    submission: SignupSubmission,
+    createdAt: Long,
+): Map<String, Any?> = buildMap {
+    put("uid", uid)
+    put("email", submission.email)
+    put("displayName", submission.name)
+    put("requestedRole", submission.requestedRole.name)
+    put("department", submission.department.id)
+    put("status", SignupRequestStatus.PENDING.name)
+    put("createdAt", createdAt)
+    submission.course?.let { put("course", it.id) }
+    submission.semester?.let { put("semester", it.toLong()) }
+    submission.rollNo?.takeIf { it.isNotBlank() }?.let { put("rollNo", it) }
+}
+
+/**
+ * The HOD's decision patch. Only these four keys may change on an existing
+ * request (enforced by the rules), and the deciding uid is recorded so an
+ * approval can always be attributed.
+ */
+internal fun signupDecisionFields(
+    status: SignupRequestStatus,
+    decidedAt: Long,
+    decidedBy: String,
+    note: String?,
+): Map<String, Any?> = buildMap {
+    put("status", status.name)
+    put("decidedAt", decidedAt)
+    put("decidedBy", decidedBy)
+    note?.takeIf { it.isNotBlank() }?.let { put("decisionNote", it) }
 }
 
 internal fun DocumentSnapshot.toNotice(): Notice? {
@@ -104,6 +186,10 @@ private fun audienceFrom(value: Any?): Audience {
 
 private fun String?.toRole(): UserRole =
     runCatching { UserRole.valueOf(this ?: "") }.getOrDefault(UserRole.STUDENT)
+
+private fun String?.toRequestStatus(): SignupRequestStatus =
+    runCatching { SignupRequestStatus.valueOf(this ?: "") }
+        .getOrDefault(SignupRequestStatus.PENDING)
 
 private fun String?.toModuleOrNull(): AdminModule? =
     runCatching { AdminModule.valueOf(this ?: "") }.getOrNull()

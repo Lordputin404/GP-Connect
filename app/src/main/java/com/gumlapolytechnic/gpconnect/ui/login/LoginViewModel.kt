@@ -57,7 +57,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
             val result = authRepository.login(
                 email = current.email,
                 password = current.password,
-                expectation = LoginExpectation.STUDENT,
+                expectation = LoginExpectation.MEMBER,
             )
             _uiState.update {
                 when (result) {

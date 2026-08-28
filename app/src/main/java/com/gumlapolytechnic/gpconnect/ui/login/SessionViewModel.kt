@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.data.model.UserRole
+import com.gumlapolytechnic.gpconnect.data.model.isAdmin
 import com.gumlapolytechnic.gpconnect.data.repository.AuthRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,9 @@ import kotlinx.coroutines.launch
  * appear during it, so a stored session never flashes LoginScreen.
  * AdminActive carries the resolved role on its [User]; the student shell can
  * never appear while an admin session is active, and vice versa.
+ *
+ * [StudentActive] is the *member* shell: it hosts STUDENT and TEACHER, which
+ * share read-only content access and have no administrative portal.
  */
 sealed interface SessionState {
     data object Checking : SessionState
@@ -42,8 +46,11 @@ class SessionViewModel(private val authRepository: AuthRepository) : ViewModel()
         when {
             resolving -> SessionState.Checking
             user == null -> SessionState.LoggedOut
-            user.role == UserRole.STUDENT -> SessionState.StudentActive(user)
-            else -> SessionState.AdminActive(user)
+            // Positive test on the admin role set, not `!= STUDENT`: a TEACHER (or
+            // any future non-admin role) must land in the member shell, never in
+            // the admin portal with an unscoped module.
+            user.role.isAdmin -> SessionState.AdminActive(user)
+            else -> SessionState.StudentActive(user)
         }
     }.stateIn(
         scope = viewModelScope,

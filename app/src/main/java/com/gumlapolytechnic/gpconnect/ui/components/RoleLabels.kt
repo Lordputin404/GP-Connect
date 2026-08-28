@@ -16,6 +16,7 @@ fun roleLabel(role: UserRole): String = stringResource(
         UserRole.LIBRARY_ADMIN -> R.string.role_library_admin
         UserRole.FACULTY_ADMIN -> R.string.role_faculty_admin
         UserRole.FACILITY_ADMIN -> R.string.role_facility_admin
+        UserRole.TEACHER -> R.string.role_teacher
         UserRole.STUDENT -> R.string.profile_role_student
     },
 )
