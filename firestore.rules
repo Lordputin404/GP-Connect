@@ -154,6 +154,29 @@ service cloud.firestore {
         : 'GLOBAL';
     }
 
+    function isCanteenAdmin() {
+      return isEnabled() && currentRole() == 'CANTEEN_ADMIN';
+    }
+
+    function orderStatuses() {
+      return ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
+    }
+
+    function activeOrderStatuses() {
+      return ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'];
+    }
+
+    function terminalOrderStatuses() {
+      return ['COMPLETED', 'CANCELLED'];
+    }
+
+    function canTransitionOrderStatus(from, to) {
+      return from == 'PENDING' && to in ['CONFIRMED', 'CANCELLED'] ||
+             from == 'CONFIRMED' && to in ['PREPARING', 'CANCELLED'] ||
+             from == 'PREPARING' && to in ['READY', 'CANCELLED'] ||
+             from == 'READY' && to in ['COMPLETED', 'CANCELLED'];
+    }
+
     // ---- shared field validation ------------------------------------------
 
     // A course is only ever valid *together with the department that offers it*.
@@ -379,6 +402,102 @@ service cloud.firestore {
         || (isDepartmentAdmin()
             && resource.data.module == moduleForRole(currentRole())
             && resource.data.ownerRole == currentRole());
+    }
+
+    // ---- canteenCategories/{categoryId} -------------------------------------
+    match /canteenCategories/{categoryId} {
+      // Any signed-in, enabled member can read enabled categories.
+      allow read: if isEnabled() && resource.data.enabled == true;
+
+      // SUPER_ADMIN and CANTEEN_ADMIN have full CRUD.
+      allow create: if isSuperAdmin() || isCanteenAdmin();
+      allow update: if (isSuperAdmin() || isCanteenAdmin())
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['name', 'description', 'displayOrder', 'enabled', 'updatedAt'])
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false; // Use enabled=false for deactivation
+    }
+
+    // ---- canteenMenuItems/{menuItemId} --------------------------------------
+    match /canteenMenuItems/{menuItemId} {
+      // Any signed-in, enabled member can read menu items.
+      // Students see only available items; admins see all.
+      allow read: if isEnabled() && (
+          (isSuperAdmin() || isCanteenAdmin())
+          || resource.data.isAvailable == true
+        );
+
+      // SUPER_ADMIN and CANTEEN_ADMIN manage menu items.
+      allow create: if isSuperAdmin() || isCanteenAdmin();
+      allow update: if (isSuperAdmin() || isCanteenAdmin())
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['categoryId', 'name', 'description', 'pricePaise', 'imageUrl',
+                     'isAvailable', 'displayOrder', 'updatedAt'])
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.pricePaise is int
+        && request.resource.data.pricePaise > 0
+        && request.resource.data.displayOrder is int;
+      allow delete: if false; // Use isAvailable=false for deactivation
+    }
+
+    // ---- canteenOrders/{orderId} --------------------------------------------
+    match /canteenOrders/{orderId} {
+      // Order ownership helper
+      function isOrderOwner() {
+        return isSignedIn() && resource.data.customerId == request.auth.uid;
+      }
+
+      // Student reads own orders; CANTEEN_ADMIN and SUPER_ADMIN read all.
+      allow get: if isOrderOwner() || isSuperAdmin() || isCanteenAdmin();
+
+      // List queries: student must filter by own customerId; admins can query active queue.
+      allow list: if (
+          isOrderOwner() &&
+          request.query.limit != null &&
+          request.query.where.size() == 1 &&
+          request.query.where[0].field == 'customerId' &&
+          request.query.where[0].op == '==' &&
+          request.query.where[0].value == request.auth.uid
+        ) || (
+          (isSuperAdmin() || isCanteenAdmin()) &&
+          request.query.where.size() >= 1 &&
+          request.query.where[0].field == 'status' &&
+          request.query.where[0].op in ['in', 'array-contains-any'] &&
+          request.query.where[0].value in [activeOrderStatuses()]
+        );
+
+      // ORDER CREATION: Students CANNOT directly create arbitrary orders.
+      // Authoritative order creation is performed by a trusted backend (Cloud Function)
+      // which fetches menu prices, verifies availability, calculates totals, and writes
+      // the immutable order document. Direct client writes are DENIED.
+      // The backend writes with a service account that bypasses these rules, or
+      // uses a custom claim. For now, no client create is allowed.
+      allow create: if false;
+
+      // Student cancellation: only own order, only while PENDING.
+      // Only status and updatedAt may change; cancellationReason optional.
+      allow update: if isOrderOwner()
+        && resource.data.status == 'PENDING'
+        && request.resource.data.status == 'CANCELLED'
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'updatedAt', 'cancellationReason'])
+        && request.resource.data.customerId == resource.data.customerId
+        && request.resource.data.items == resource.data.items
+        && request.resource.data.totalAmountPaise == resource.data.totalAmountPaise;
+
+      // CANTEEN_ADMIN / SUPER_ADMIN status transitions.
+      // Only permitted fields: status, updatedAt, decidedBy, cancellationReason.
+      // Must follow valid state machine transitions.
+      allow update: if (isSuperAdmin() || isCanteenAdmin())
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'updatedAt', 'decidedBy', 'cancellationReason'])
+        && request.resource.data.customerId == resource.data.customerId
+        && request.resource.data.items == resource.data.items
+        && request.resource.data.totalAmountPaise == resource.data.totalAmountPaise
+        && canTransitionOrderStatus(resource.data.status, request.resource.data.status);
+
+      // No deletion of orders — historical integrity.
+      allow delete: if false;
     }
   }
 }
