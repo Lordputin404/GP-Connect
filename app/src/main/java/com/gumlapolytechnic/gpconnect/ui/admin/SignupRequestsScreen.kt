@@ -52,8 +52,11 @@ import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequest
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequestStatus
 import com.gumlapolytechnic.gpconnect.data.model.User
+import com.gumlapolytechnic.gpconnect.data.model.UserRole
+import com.gumlapolytechnic.gpconnect.ui.components.CategoryChip
 import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
 import com.gumlapolytechnic.gpconnect.ui.components.ErrorState
+import com.gumlapolytechnic.gpconnect.ui.components.FieldLabel
 import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
 import com.gumlapolytechnic.gpconnect.ui.components.roleLabel
 import com.gumlapolytechnic.gpconnect.util.Dates
@@ -73,6 +76,7 @@ fun SignupRequestsScreen(adminUser: User, onBack: () -> Unit) {
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var rejectTarget by remember { mutableStateOf<SignupRequest?>(null) }
+    var approveHodTarget by remember { mutableStateOf<SignupRequest?>(null) }
 
     Scaffold(
         topBar = {
@@ -154,6 +158,7 @@ fun SignupRequestsScreen(adminUser: User, onBack: () -> Unit) {
                             request = request,
                             isBusy = request.uid in state.busyUids,
                             onApprove = { viewModel.approve(request) },
+                            onApproveHod = { approveHodTarget = request },
                             onReject = { rejectTarget = request },
                         )
                     }
@@ -170,6 +175,18 @@ fun SignupRequestsScreen(adminUser: User, onBack: () -> Unit) {
             onConfirm = { note ->
                 viewModel.reject(request, note)
                 rejectTarget = null
+            },
+        )
+    }
+
+    if (approveHodTarget != null) {
+        val request = approveHodTarget!!
+        ApproveHodDialog(
+            request = request,
+            onDismiss = { approveHodTarget = null },
+            onConfirm = { department ->
+                viewModel.approveHod(request, department)
+                approveHodTarget = null
             },
         )
     }
@@ -243,11 +260,79 @@ private fun RejectRequestDialog(
     )
 }
 
+/**
+ * SUPER_ADMIN confirms the department a HOD applicant will head. The dialog
+ * opens pre-selected with the requested department (requirement 2) but the
+ * decision — and the atomic role+department+enabled write — only happens on
+ * explicit confirmation of exactly one department.
+ */
+@Composable
+private fun ApproveHodDialog(
+    request: SignupRequest,
+    onDismiss: () -> Unit,
+    onConfirm: (Department) -> Unit,
+) {
+    var selectedDepartment by remember(request.uid) {
+        mutableStateOf(request.departmentOrNull)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.admin_requests_approve_hod_title)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    text = request.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = request.email,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.admin_requests_approve_hod_body),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                FieldLabel(stringResource(R.string.admin_assign_department_label))
+                Spacer(modifier = Modifier.height(4.dp))
+                Department.entries.forEach { department ->
+                    CategoryChip(
+                        label = department.displayName,
+                        selected = selectedDepartment == department,
+                        onClick = { selectedDepartment = department },
+                        modifier = Modifier.padding(vertical = 2.dp),
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { selectedDepartment?.let(onConfirm) },
+                enabled = selectedDepartment != null,
+            ) {
+                Text(stringResource(R.string.admin_requests_approve))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.admin_action_cancel))
+            }
+        },
+    )
+}
+
 @Composable
 private fun SignupRequestCard(
     request: SignupRequest,
     isBusy: Boolean,
     onApprove: () -> Unit,
+    onApproveHod: () -> Unit,
     onReject: () -> Unit,
 ) {
     Surface(
@@ -337,8 +422,16 @@ private fun SignupRequestCard(
                     }
                 } else {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = onApprove, modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.admin_requests_approve))
+                        // A HOD applicant is approved through the department
+                        // confirmation dialog; everything else approves directly.
+                        if (request.requestedRole == UserRole.FACULTY_ADMIN) {
+                            Button(onClick = onApproveHod, modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.admin_requests_approve))
+                            }
+                        } else {
+                            Button(onClick = onApprove, modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.admin_requests_approve))
+                            }
                         }
                         OutlinedButton(onClick = onReject, modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.admin_requests_reject))

@@ -30,8 +30,14 @@ interface SignupRequestRepository {
      * `users/{uid}` to `enabled = true` with the requested role. One
      * [com.google.firebase.firestore.WriteBatch], so an approved request can
      * never exist alongside a still-disabled account.
+     *
+     * A HOD (FACULTY_ADMIN) request must be approved by a SUPER_ADMIN, which
+     * assigns the HOD's department here: exactly one [Department] is required
+     * for it and the profile is written with role = FACULTY_ADMIN, the
+     * department, enabled = true and module = FACULTY. Member approvals leave
+     * [department] null and behave exactly as before.
      */
-    suspend fun approve(request: SignupRequest, decidedBy: String): Result<Unit>
+    suspend fun approve(request: SignupRequest, decidedBy: String, department: Department? = null): Result<Unit>
 
     /**
      * Reject [request]. The account stays disabled; only the request document

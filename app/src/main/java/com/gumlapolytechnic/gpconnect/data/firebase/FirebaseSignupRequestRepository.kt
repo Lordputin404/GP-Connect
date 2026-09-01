@@ -5,6 +5,7 @@ import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.MEMBER_ROLES
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequest
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequestStatus
+import com.gumlapolytechnic.gpconnect.data.model.UserRole
 import com.gumlapolytechnic.gpconnect.data.model.sortedForInbox
 import com.gumlapolytechnic.gpconnect.data.repository.SignupRequestRepository
 import com.google.firebase.firestore.ListenerRegistration
@@ -59,12 +60,23 @@ class FirebaseSignupRequestRepository : SignupRequestRepository {
         awaitClose { registration.remove() }
     }
 
-    override suspend fun approve(request: SignupRequest, decidedBy: String): Result<Unit> {
+    override suspend fun approve(
+        request: SignupRequest,
+        decidedBy: String,
+        department: Department?,
+    ): Result<Unit> {
         val grantedRole = request.requestedRole
-        if (grantedRole !in MEMBER_ROLES) {
+        val hodApproval = grantedRole == UserRole.FACULTY_ADMIN
+        if (grantedRole !in MEMBER_ROLES && !hodApproval) {
             // Defence in depth: the rules reject this too, but a tampered request
             // document must never be handed to a write.
             val message = "Refusing to approve uid=${request.uid}: illegal requested role $grantedRole"
+            Log.e(TAG, message)
+            return Result.failure(IllegalArgumentException(message))
+        }
+        if (hodApproval && department == null) {
+            // Requirement 6: a HOD is only complete with exactly one department.
+            val message = "Refusing to approve HOD uid=${request.uid}: no department assigned"
             Log.e(TAG, message)
             return Result.failure(IllegalArgumentException(message))
         }
@@ -76,16 +88,20 @@ class FirebaseSignupRequestRepository : SignupRequestRepository {
                 signupDecisionFields(SignupRequestStatus.APPROVED, now, decidedBy, note = null),
             )
             // Same batch as the decision, so an APPROVED request can never exist
-            // alongside a still-disabled account. `module` is not written: a
-            // member role grants no module, it is not HOD-writable in the rules,
-            // and no permission is derived from the stored field.
+            // alongside a still-disabled account. Member approvals write no
+            // `module` and no `department`: a member role grants no module, and
+            // the profile already carries the applicant's department.
             batch.update(
                 firestore.collection(USERS).document(request.uid),
-                mapOf(
-                    "role" to grantedRole.name,
-                    "enabled" to true,
-                    "updatedAt" to now,
-                ),
+                if (hodApproval) {
+                    hodProfileFields(department!!, now)
+                } else {
+                    mapOf(
+                        "role" to grantedRole.name,
+                        "enabled" to true,
+                        "updatedAt" to now,
+                    )
+                },
             )
             batch.commit().awaitTask()
             Log.i(TAG, "Approved uid=${request.uid} as $grantedRole by $decidedBy")

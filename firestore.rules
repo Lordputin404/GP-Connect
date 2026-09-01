@@ -26,9 +26,11 @@ rules_version = '2';
 //  1. Only authenticated users read content; only *enabled* users read notices.
 //  2. Self-registration can only ever create a **disabled STUDENT** profile.
 //     A requested TEACHER role lives on the signup request and is applied by
-//     the HOD on approval, so signup can never mint a teacher or an admin.
+//     the HOD on approval; a requested FACULTY_ADMIN (HOD) role is applied by
+//     the SUPER_ADMIN on approval, so signup can never mint any authority.
 //  3. A user may update only their own displayName. Role, enabled, module,
-//     department, course, semester, rollNo and email are not self-writable.
+//     department, course, semester, rollNo and email are not self-writable —
+//     an approved HOD therefore cannot change its own role or department.
 //  4. Department isolation is enforced on the *server*: the HOD rules match on
 //     resource.data.department, which forces every client query to carry the
 //     matching `where('department','==',…)` constraint. A tampered client
@@ -37,6 +39,10 @@ rules_version = '2';
 //     can move a member between STUDENT and TEACHER and nothing else.
 //  6. A signup decision is one-way (PENDING → APPROVED/REJECTED), is attributed
 //     to the deciding uid, and cannot touch any other field of the request.
+//  7. A HOD (FACULTY_ADMIN) signup request is decidable by the SUPER_ADMIN
+//     only; STUDENT/TEACHER requests stay decidable by the department HOD
+//     exactly as before. The approving SUPER_ADMIN assigns the one department
+//     in the same atomic write that enables the account.
 //
 // Canonical id allow-lists below mirror the Department / Course enums in
 // data/model/Department.kt. Adding a department or course requires both edits.
@@ -111,6 +117,14 @@ service cloud.firestore {
 
     function memberRoles() {
       return ['STUDENT', 'TEACHER'];
+    }
+
+    // Roles an applicant may request at self-signup: members, plus the HOD
+    // role. A HOD request is decided by the SUPER_ADMIN only (see the
+    // signupRequests update rule), so a request can never mint authority by
+    // itself — the profile stays a disabled STUDENT until a decision lands.
+    function requestableRoles() {
+      return memberRoles().concat(['FACULTY_ADMIN']);
     }
 
     // ---- role predicates ---------------------------------------------------
@@ -266,7 +280,9 @@ service cloud.firestore {
 
       // Written by the applicant during signup, together with the disabled
       // users/{uid} profile, in one batch. PENDING only, self-attributed, and
-      // with no decision fields — those keys are not in the allow-list.
+      // with no decision fields — those keys are not in the allow-list. A HOD
+      // applicant additionally states the department it wants to head; the
+      // role itself is only granted by the SUPER_ADMIN's decision.
       function isSelfRequest() {
         return isSelf(uid) &&
           request.resource.data.keys().hasAll(
@@ -279,7 +295,7 @@ service cloud.firestore {
           request.resource.data.uid == uid &&
           request.resource.data.email == request.auth.token.email &&
           isNonEmptyString(request.resource.data.displayName) &&
-          request.resource.data.requestedRole in memberRoles() &&
+          request.resource.data.requestedRole in requestableRoles() &&
           request.resource.data.department in departmentIds() &&
           request.resource.data.status == 'PENDING' &&
           request.resource.data.createdAt is int &&
@@ -302,8 +318,19 @@ service cloud.firestore {
             .hasOnly(['status', 'decidedAt', 'decidedBy', 'decisionNote']);
       }
 
+      // Member requests are decided by the department HOD or the super admin,
+      // exactly as before. A HOD (FACULTY_ADMIN) request is decided by the
+      // SUPER_ADMIN only — the role grants department-wide authority, so no
+      // HOD may approve itself or a peer.
+      function isDecisionAllowed() {
+        return resource.data.requestedRole == 'FACULTY_ADMIN'
+          ? isSuperAdmin() && isDecision()
+          : (isSuperAdmin() || isHodOfThisDepartment()) && isDecision();
+      }
+
       // The applicant may follow their own request; the HOD sees its own
-      // department; the super admin sees everything.
+      // department; the super admin sees everything. (A HOD applicant's own
+      // department HOD can still *see* the request, but cannot decide it.)
       allow get: if isSelf(uid) || isSuperAdmin() || isHodOfThisDepartment();
 
       // Department-scoped enumeration, server-enforced exactly as for users.
@@ -312,7 +339,7 @@ service cloud.firestore {
 
       allow create: if isSelfRequest();
 
-      allow update: if (isSuperAdmin() || isHodOfThisDepartment()) && isDecision();
+      allow update: if isDecisionAllowed();
 
       allow delete: if isSuperAdmin();
     }

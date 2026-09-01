@@ -43,12 +43,19 @@ data class SignupUiState(
     val fieldErrors: Set<SignupField> = emptySet(),
 ) {
     val departments: List<Department> = Department.entries
-    val applicantRoles: List<UserRole> = listOf(UserRole.STUDENT, UserRole.TEACHER)
+    val applicantRoles: List<UserRole> = listOf(
+        UserRole.STUDENT,
+        UserRole.TEACHER,
+        UserRole.FACULTY_ADMIN,
+    )
 
     /** Courses offered by the chosen department; empty until one is chosen. */
     val availableCourses: List<Course> get() = department?.courses.orEmpty()
 
     val isStudentApplicant: Boolean get() = requestedRole == UserRole.STUDENT
+
+    /** A HOD applicant is reviewed by the super admin, not a department HOD. */
+    val isHodApplicant: Boolean get() = requestedRole == UserRole.FACULTY_ADMIN
 }
 
 /**
@@ -85,8 +92,9 @@ class SignupViewModel(private val authRepository: AuthRepository) : ViewModel() 
     fun onRoleChange(role: UserRole) {
         if (role !in _uiState.value.applicantRoles) return
         _uiState.update { current ->
-            // Academic identity only applies to a student applicant.
-            if (role == UserRole.TEACHER) {
+            // Academic identity only applies to a student applicant; a teacher
+            // or HOD applicant claims none of it.
+            if (role != UserRole.STUDENT) {
                 current.copy(
                     requestedRole = role,
                     course = null,

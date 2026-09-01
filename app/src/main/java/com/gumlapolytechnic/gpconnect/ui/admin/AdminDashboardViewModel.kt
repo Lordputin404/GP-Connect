@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gumlapolytechnic.gpconnect.data.model.AdminModule
 import com.gumlapolytechnic.gpconnect.data.model.Department
+import com.gumlapolytechnic.gpconnect.data.model.MEMBER_ROLES
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequest
 import com.gumlapolytechnic.gpconnect.data.model.User
@@ -63,7 +64,8 @@ class AdminDashboardViewModel(
     /**
      * Pending signup requests visible to this admin. Only a super admin or an
      * HOD may list requests at all, so nobody else even opens a listener (the
-     * rules would reject it).
+     * rules would reject it). A super admin also sees pending HOD requests;
+     * an HOD's badge counts member requests only, matching its inbox.
      */
     private val pendingRequests: Flow<Int> = when {
         adminUser.role == UserRole.SUPER_ADMIN -> signupRequestRepository.observeAllRequests()
@@ -72,7 +74,10 @@ class AdminDashboardViewModel(
         )
         else -> flowOf(Result.success(emptyList()))
     }.map { result: Result<List<SignupRequest>> ->
-        result.getOrDefault(emptyList()).count { it.isPending }
+        val memberScopeOnly = adminUser.isHod
+        result.getOrDefault(emptyList()).count {
+            it.isPending && (!memberScopeOnly || it.requestedRole in MEMBER_ROLES)
+        }
     }
 
     /**

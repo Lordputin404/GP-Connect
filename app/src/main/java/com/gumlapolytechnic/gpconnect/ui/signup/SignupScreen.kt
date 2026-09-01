@@ -124,6 +124,13 @@ fun SignupScreen(onBack: () -> Unit) {
                     )
                 }
             }
+            if (state.isHodApplicant) {
+                Text(
+                    text = stringResource(R.string.signup_hod_intro),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             OutlinedTextField(
                 value = state.name,

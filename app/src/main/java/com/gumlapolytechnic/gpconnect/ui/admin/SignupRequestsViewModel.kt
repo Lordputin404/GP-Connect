@@ -3,6 +3,7 @@ package com.gumlapolytechnic.gpconnect.ui.admin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gumlapolytechnic.gpconnect.data.model.Department
+import com.gumlapolytechnic.gpconnect.data.model.MEMBER_ROLES
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequest
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.data.model.UserRole
@@ -69,7 +70,11 @@ class SignupRequestsViewModel(
                     SignupRequestsUiState(
                         isLoading = false,
                         department = department,
-                        requests = list.sortedForInbox(),
+                        // A HOD decides member requests only; HOD applicants are
+                        // reviewed by the super admin (rules enforce this too).
+                        requests = list
+                            .filter { isSuperAdmin || it.requestedRole in MEMBER_ROLES }
+                            .sortedForInbox(),
                         busyUids = busy,
                         actionFailed = failed,
                     )
@@ -88,8 +93,19 @@ class SignupRequestsViewModel(
             initialValue = SignupRequestsUiState(department = department),
         )
 
+    /** Approve a member (STUDENT/TEACHER) request — the unchanged HOD flow. */
     fun approve(request: SignupRequest) = decide(request) {
         repository.approve(request, adminUser.id)
+    }
+
+    /**
+     * Approve a HOD request. SUPER_ADMIN only: the confirmed department is
+     * assigned in the same atomic batch as the decision. The rules reject any
+     * other caller, and the repository refuses a missing department — a HOD
+     * cannot exist without exactly one.
+     */
+    fun approveHod(request: SignupRequest, department: Department) = decide(request) {
+        repository.approve(request, adminUser.id, department)
     }
 
     fun reject(request: SignupRequest, note: String?) = decide(request) {

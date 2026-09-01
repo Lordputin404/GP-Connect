@@ -3,6 +3,7 @@ package com.gumlapolytechnic.gpconnect.data.firebase
 import com.gumlapolytechnic.gpconnect.data.model.AdminModule
 import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
+import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequest
@@ -112,6 +113,23 @@ internal fun signupDecisionFields(
     put("decidedBy", decidedBy)
     note?.takeIf { it.isNotBlank() }?.let { put("decisionNote", it) }
 }
+
+/**
+ * The `users/{uid}` patch a SUPER_ADMIN writes when approving a HOD signup
+ * request: role = FACULTY_ADMIN, enabled = true, bound to exactly the one
+ * [department] confirmed during approval. `module` is FACULTY display metadata
+ * derived from the role, matching what Admin Management writes.
+ */
+internal fun hodProfileFields(
+    department: Department,
+    updatedAt: Long,
+): Map<String, Any?> = mapOf(
+    "role" to UserRole.FACULTY_ADMIN.name,
+    "enabled" to true,
+    "module" to AdminModule.FACULTY.name,
+    "department" to department.id,
+    "updatedAt" to updatedAt,
+)
 
 internal fun DocumentSnapshot.toNotice(): Notice? {
     val data = data ?: return null
