@@ -499,5 +499,12 @@ service cloud.firestore {
       // No deletion of orders — historical integrity.
       allow delete: if false;
     }
+
+    // ---- canteenIdempotencyKeys/{key} ---------------------------------------
+    // Idempotency records are written/read only by the trusted checkout Cloud Function
+    // using the Firebase Admin SDK. Normal clients must not access this collection.
+    match /canteenIdempotencyKeys/{key} {
+      allow read, write, delete: if false;
+    }
   }
 }
