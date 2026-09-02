@@ -3,9 +3,12 @@ package com.gumlapolytechnic.gpconnect.data.firebase
 import com.gumlapolytechnic.gpconnect.data.model.AdminModule
 import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
+import com.gumlapolytechnic.gpconnect.data.model.CanteenOrder
 import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
+import com.gumlapolytechnic.gpconnect.data.model.OrderItemSnapshot
+import com.gumlapolytechnic.gpconnect.data.model.OrderStatus
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequest
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequestStatus
 import com.gumlapolytechnic.gpconnect.data.model.SignupSubmission
@@ -209,11 +212,43 @@ private fun String?.toRequestStatus(): SignupRequestStatus =
     runCatching { SignupRequestStatus.valueOf(this ?: "") }
         .getOrDefault(SignupRequestStatus.PENDING)
 
+private fun String?.toOrderStatus(): OrderStatus =
+    runCatching { OrderStatus.valueOf(this ?: "") }
+        .getOrDefault(OrderStatus.PENDING)
+
 private fun String?.toModuleOrNull(): AdminModule? =
     runCatching { AdminModule.valueOf(this ?: "") }.getOrNull()
 
 private fun String?.toCategory(): NoticeCategory =
     runCatching { NoticeCategory.valueOf(this ?: "") }.getOrDefault(NoticeCategory.GENERAL)
+
+internal fun DocumentSnapshot.toCanteenOrder(): CanteenOrder? {
+    val data = data ?: return null
+    return CanteenOrder(
+        id = id,
+        customerId = data.string("customerId"),
+        customerName = data.string("customerName"),
+        customerEmail = data.string("customerEmail"),
+        items = (data["items"] as? List<*>)
+            ?.mapNotNull { entry ->
+                val m = entry as? Map<*, *> ?: return@mapNotNull null
+                OrderItemSnapshot(
+                    menuItemId = m.string("menuItemId"),
+                    name = m.string("name"),
+                    pricePaise = m.long("pricePaise"),
+                    quantity = (m["quantity"] as? Long)?.toInt() ?: 0,
+                )
+            }
+            .orEmpty(),
+        totalAmountPaise = data.long("totalAmountPaise"),
+        status = data.string("status").toOrderStatus(),
+        createdAt = data.long("createdAt"),
+        updatedAt = data.long("updatedAt"),
+        decidedBy = data.stringOrNull("decidedBy"),
+        cancellationReason = data.stringOrNull("cancellationReason"),
+    )
+}
+
 
 private fun Map<*, *>.string(key: String): String = this[key] as? String ?: ""
 

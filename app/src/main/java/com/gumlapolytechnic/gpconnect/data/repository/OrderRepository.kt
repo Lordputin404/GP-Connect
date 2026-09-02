@@ -1,14 +1,14 @@
 package com.gumlapolytechnic.gpconnect.data.repository
 
 import com.gumlapolytechnic.gpconnect.data.model.CanteenOrder
-import com.gumlapolytechnic.gpconnect.data.model.OrderItemRequest
+import com.gumlapolytechnic.gpconnect.data.model.CheckoutRequest
 import com.gumlapolytechnic.gpconnect.data.model.OrderStatus
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Canteen order data contract.
  *
- * The Android client submits [OrderItemRequest] intents (item ID + quantity).
+ * The Android client submits a [CheckoutRequest] (item IDs + quantities + idempotency key).
  * Authoritative pricing, availability, and snapshot creation are performed by
  * the trusted checkout backend (Cloud Function). This repository does NOT expose
  * a generic "createOrder(CanteenOrder)" or "updateOrder(CanteenOrder)" to
@@ -25,8 +25,11 @@ interface OrderRepository {
      * 3. Calculate subtotals and total from live prices
      * 4. Create immutable [OrderItemSnapshot] records
      * 5. Persist the [CanteenOrder] with status PENDING
+     *
+     * The [CheckoutRequest.idempotencyKey] MUST be the same across retries of the
+     * same logical checkout operation to prevent duplicate orders.
      */
-    suspend fun submitOrder(items: List<OrderItemRequest>): Result<CanteenOrder>
+    suspend fun submitOrder(request: CheckoutRequest): Result<CanteenOrder>
 
     /**
      * The student's single active order (status in PENDING, CONFIRMED, PREPARING, READY),
@@ -59,7 +62,6 @@ interface OrderRepository {
     suspend fun updateOrderStatus(
         orderId: String,
         newStatus: OrderStatus,
-        decidedBy: String,
         cancellationReason: String?
     ): Result<Unit>
 }
