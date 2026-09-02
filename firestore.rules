@@ -206,6 +206,28 @@ service cloud.firestore {
       return value is string && value.size() > 0 && value.size() <= 200;
     }
 
+    // ---- catalog list-query predicates ---------------------------------------
+    // Firestore evaluates `list` rules against the *query shape*, not the
+    // returned documents. These helpers let a member enumerate the catalog
+    // ONLY when the query already carries the equality filter that the
+    // single-document read rule would have required. Any additional `where`
+    // clause is rejected so a tampered client cannot widen the scope beyond
+    // the documented shape.
+
+    function isCategoryEnabledListQuery() {
+      return request.query.where.size() == 1
+        && request.query.where[0].field == 'enabled'
+        && request.query.where[0].op == '=='
+        && request.query.where[0].value == true;
+    }
+
+    function isMenuItemAvailableListQuery() {
+      return request.query.where.size() == 1
+        && request.query.where[0].field == 'isAvailable'
+        && request.query.where[0].op == '=='
+        && request.query.where[0].value == true;
+    }
+
     // ---- users/{uid} -------------------------------------------------------
     match /users/{uid} {
 
@@ -406,8 +428,18 @@ service cloud.firestore {
 
     // ---- canteenCategories/{categoryId} -------------------------------------
     match /canteenCategories/{categoryId} {
-      // Any signed-in, enabled member can read enabled categories.
+      // Single-document read by any signed-in, enabled member, restricted to
+      // enabled categories. The list rule below is the only path for the
+      // student catalog: a plain `get` by a student on a disabled document is
+      // already rejected by this `read` clause.
       allow read: if isEnabled() && resource.data.enabled == true;
+
+      // SUPER_ADMIN and CANTEEN_ADMIN may list every category, with or
+      // without filters. A member may list ONLY with the equality filter on
+      // `enabled == true`, so the client cannot widen the scope to disabled
+      // categories and Firestore is not relied upon to post-filter.
+      allow list: if isSuperAdmin() || isCanteenAdmin()
+        || (isEnabled() && isCategoryEnabledListQuery());
 
       // SUPER_ADMIN and CANTEEN_ADMIN have full CRUD.
       allow create: if isSuperAdmin() || isCanteenAdmin();
@@ -420,12 +452,18 @@ service cloud.firestore {
 
     // ---- canteenMenuItems/{menuItemId} --------------------------------------
     match /canteenMenuItems/{menuItemId} {
-      // Any signed-in, enabled member can read menu items.
-      // Students see only available items; admins see all.
+      // Single-document read by any signed-in, enabled member, restricted
+      // to available items for non-admins. Admins see every menu item.
       allow read: if isEnabled() && (
           (isSuperAdmin() || isCanteenAdmin())
           || resource.data.isAvailable == true
         );
+
+      // Admins may list every item. A member may list ONLY with the equality
+      // filter on `isAvailable == true`, mirroring the categories rule so the
+      // client cannot widen the scope to unavailable items.
+      allow list: if isSuperAdmin() || isCanteenAdmin()
+        || (isEnabled() && isMenuItemAvailableListQuery());
 
       // SUPER_ADMIN and CANTEEN_ADMIN manage menu items.
       allow create: if isSuperAdmin() || isCanteenAdmin();
