@@ -3,6 +3,8 @@ package com.gumlapolytechnic.gpconnect.data.firebase
 import com.gumlapolytechnic.gpconnect.data.model.AdminModule
 import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
+import com.gumlapolytechnic.gpconnect.data.model.CanteenCategory
+import com.gumlapolytechnic.gpconnect.data.model.CanteenMenuItem
 import com.gumlapolytechnic.gpconnect.data.model.CanteenOrder
 import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.Notice
@@ -17,7 +19,7 @@ import com.gumlapolytechnic.gpconnect.data.model.UserRole
 import com.google.firebase.firestore.DocumentSnapshot
 
 /**
- * Firestore document ↔ domain model converters. Parsing is defensive: unknown
+ * Firestore document ? domain model converters. Parsing is defensive: unknown
  * role/module strings or malformed shapes degrade to safe defaults rather
  * than crashing client screens.
  */
@@ -247,6 +249,108 @@ internal fun DocumentSnapshot.toCanteenOrder(): CanteenOrder? {
         decidedBy = data.stringOrNull("decidedBy"),
         cancellationReason = data.stringOrNull("cancellationReason"),
     )
+}
+
+internal fun DocumentSnapshot.toCanteenCategory(): CanteenCategory? {
+    val data = data ?: return null
+    val name = data.stringOrNull("name") ?: return null
+    return CanteenCategory(
+        id = id,
+        name = name,
+        description = data.stringOrNull("description"),
+        displayOrder = (data["displayOrder"] as? Long)?.toInt() ?: 0,
+        enabled = data["enabled"] as? Boolean ?: true,
+        createdAt = data.long("createdAt"),
+        updatedAt = data.long("updatedAt"),
+    )
+}
+
+internal fun DocumentSnapshot.toCanteenMenuItem(): CanteenMenuItem? {
+    val data = data ?: return null
+    val name = data.stringOrNull("name") ?: return null
+    val categoryId = data.stringOrNull("categoryId") ?: return null
+    val pricePaise = data["pricePaise"] as? Long
+    if (pricePaise == null || pricePaise <= 0) return null
+    return CanteenMenuItem(
+        id = id,
+        categoryId = categoryId,
+        name = name,
+        description = data.stringOrNull("description"),
+        pricePaise = pricePaise,
+        imageUrl = data.stringOrNull("imageUrl"),
+        isAvailable = data["isAvailable"] as? Boolean ?: true,
+        displayOrder = (data["displayOrder"] as? Long)?.toInt() ?: 0,
+        createdAt = data.long("createdAt"),
+        updatedAt = data.long("updatedAt"),
+    )
+}
+
+internal fun categoryFields(
+    name: String,
+    description: String?,
+    displayOrder: Int,
+    enabled: Boolean,
+    createdAt: Long,
+): Map<String, Any?> = buildMap {
+    put("name", name)
+    description?.takeIf { it.isNotBlank() }?.let { put("description", it) }
+    put("displayOrder", displayOrder)
+    put("enabled", enabled)
+    put("createdAt", createdAt)
+    put("updatedAt", createdAt)
+}
+
+internal fun categoryUpdateFields(
+    name: String?,
+    description: String?,
+    displayOrder: Int?,
+    enabled: Boolean?,
+    updatedAt: Long,
+): Map<String, Any?> = buildMap {
+    name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
+    description?.takeIf { it.isNotBlank() }?.let { put("description", it) }
+    displayOrder?.let { put("displayOrder", it) }
+    enabled?.let { put("enabled", it) }
+    put("updatedAt", updatedAt)
+}
+
+internal fun menuItemFields(
+    categoryId: String,
+    name: String,
+    description: String?,
+    pricePaise: Long,
+    imageUrl: String?,
+    isAvailable: Boolean,
+    displayOrder: Int,
+    createdAt: Long,
+): Map<String, Any?> = buildMap {
+    put("categoryId", categoryId)
+    put("name", name)
+    description?.takeIf { it.isNotBlank() }?.let { put("description", it) }
+    put("pricePaise", pricePaise)
+    imageUrl?.takeIf { it.isNotBlank() }?.let { put("imageUrl", it) }
+    put("isAvailable", isAvailable)
+    put("displayOrder", displayOrder)
+    put("createdAt", createdAt)
+    put("updatedAt", createdAt)
+}
+
+internal fun menuItemUpdateFields(
+    name: String?,
+    description: String?,
+    pricePaise: Long?,
+    imageUrl: String?,
+    isAvailable: Boolean?,
+    displayOrder: Int?,
+    updatedAt: Long,
+): Map<String, Any?> = buildMap {
+    name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
+    description?.takeIf { it.isNotBlank() }?.let { put("description", it) }
+    pricePaise?.let { put("pricePaise", it) }
+    imageUrl?.takeIf { it.isNotBlank() }?.let { put("imageUrl", it) }
+    isAvailable?.let { put("isAvailable", it) }
+    displayOrder?.let { put("displayOrder", it) }
+    put("updatedAt", updatedAt)
 }
 
 
