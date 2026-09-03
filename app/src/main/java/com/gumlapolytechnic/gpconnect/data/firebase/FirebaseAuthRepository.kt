@@ -56,6 +56,15 @@ class FirebaseAuthRepository : AuthRepository {
     @Volatile
     private var registrationInProgress = false
 
+    /**
+     * Set for the duration of [resendVerificationEmail] only. It signs an
+     * (unverified) user in just to send the email; without this guard the
+     * restore listener below would immediately resolve that transient session
+     * — and sign it out again mid-send, killing the send.
+     */
+    @Volatile
+    private var resendInProgress = false
+
     init {
         // Restores a persisted Firebase session at app start (and observes
         // sign-out). Profile problems end the session rather than guessing a
@@ -67,6 +76,13 @@ class FirebaseAuthRepository : AuthRepository {
                 // signup screen (session == null, resolving == false) and is
                 // signed out again as soon as the signup writes complete.
                 Log.i(TAG, "Auth state change ignored — signup in progress")
+                return@addAuthStateListener
+            }
+            if (resendInProgress) {
+                // The resend flow signs in only to send the email and signs
+                // straight back out itself; a transient unverified session must
+                // never be resolved here.
+                Log.i(TAG, "Auth state change ignored — verification resend in progress")
                 return@addAuthStateListener
             }
             val firebaseUser = firebaseAuth.currentUser
@@ -95,8 +111,31 @@ class FirebaseAuthRepository : AuthRepository {
                             auth.signOut()
                         }
                         else -> {
-                            Log.i(TAG, "Session restored: uid=${profile.id} role=${profile.role}")
-                            _session.value = profile
+                            // Same gate as login(): no session for an
+                            // unverified email. Reload first because the cached
+                            // Firebase user may predate a verification the
+                            // user completed via the email link; if the reload
+                            // fails (e.g. offline) the cached flag is the best
+                            // available answer.
+                            val emailVerified = try {
+                                firebaseUser.reload().awaitTask()
+                                firebaseUser.isEmailVerified
+                            } catch (e: Exception) {
+                                Log.w(
+                                    TAG,
+                                    "Session restore: reload failed — " +
+                                        "using cached verification state",
+                                    e,
+                                )
+                                firebaseUser.isEmailVerified
+                            }
+                            if (!emailVerified) {
+                                Log.w(TAG, "Session restore: email not verified — signing out")
+                                auth.signOut()
+                            } else {
+                                Log.i(TAG, "Session restored: uid=${profile.id} role=${profile.role}")
+                                _session.value = profile
+                            }
                         }
                     }
                     _isResolvingSession.value = false
@@ -163,11 +202,34 @@ class FirebaseAuthRepository : AuthRepository {
             return LoginResult.AccountNotConfigured
         }
 
+        // The user may have verified their email from a link moments ago; the
+        // cached Firebase user can still hold the pre-verification state.
+        // Reload refreshes it from the server before isEmailVerified is read.
+        // A reload failure (e.g. offline) is not fatal: the fresh sign-in token
+        // above already carries an accurate verification state.
+        runCatching { firebaseUser.reload().awaitTask() }
+            .onFailure { failure ->
+                Log.w(
+                    TAG,
+                    "reload() failed before verification check: " +
+                        "${failure.javaClass.simpleName}: ${failure.message}",
+                )
+            }
+
         return when {
             !profile.enabled -> {
                 Log.w(TAG, "Profile disabled for uid=${profile.id}")
                 auth.signOut()
                 LoginResult.AccountDisabled
+            }
+            // Email verification is a second, independent gate: an approved and
+            // enabled profile is still unusable until the Firebase email is
+            // verified. Checked from the freshly signed-in Firebase user (the
+            // token cache may be stale after verifying from a web link).
+            !firebaseUser.isEmailVerified -> {
+                Log.w(TAG, "Email not verified for uid=${profile.id}")
+                auth.signOut()
+                LoginResult.EmailNotVerified
             }
             expectation == LoginExpectation.MEMBER && profile.role.isAdmin -> {
                 Log.w(TAG, "Role mismatch: expected a student/teacher account, got ${profile.role}")
@@ -259,6 +321,21 @@ class FirebaseAuthRepository : AuthRepository {
                 }
             }
 
+            // The verification email is sent once the account is real (Auth
+            // account + profile + request all written). A send failure is NOT
+            // a signup failure — the account exists, the request is filed, and
+            // the user can request the email again from the login screen.
+            runCatching { firebaseUser.sendEmailVerification().awaitTask() }
+                .onSuccess { Log.i(TAG, "Verification email sent to uid=$uid") }
+                .onFailure { failure ->
+                    Log.e(
+                        TAG,
+                        "sendEmailVerification failed for uid=$uid " +
+                            "(${failure.javaClass.simpleName}: ${failure.message})",
+                        failure,
+                    )
+                }
+
             Log.i(
                 TAG,
                 "Signup request created: uid=$uid department=${stored.department.id} " +
@@ -273,6 +350,57 @@ class FirebaseAuthRepository : AuthRepository {
             if (createdUid != null) {
                 auth.signOut()
             }
+        }
+    }
+
+    override suspend fun resendVerificationEmail(email: String, password: String): Result<Unit> {
+        // Firebase sends verification emails only to the signed-in user, so
+        // this signs in with the same credentials the login attempt already
+        // used, sends, and always signs back out. An unverified account never
+        // keeps a live session, and verification grants nothing by itself —
+        // approval + enabled checks still apply on the next login.
+        resendInProgress = true
+        try {
+            try {
+                auth.signInWithEmailAndPassword(email.trim(), password).awaitTask()
+            } catch (e: FirebaseAuthException) {
+                Log.e(
+                    TAG,
+                    "resendVerificationEmail: sign-in failed: code=${e.errorCode} message=${e.message}",
+                    e,
+                )
+                return Result.failure(e)
+            } catch (e: Exception) {
+                Log.e(TAG, "resendVerificationEmail: sign-in failed: ${e.message}", e)
+                return Result.failure(e)
+            }
+            val firebaseUser = auth.currentUser
+            return try {
+                if (firebaseUser == null) {
+                    Log.e(TAG, "resendVerificationEmail: no user after sign-in")
+                    Result.failure(IllegalStateException("No Firebase user after sign-in"))
+                } else if (firebaseUser.isEmailVerified) {
+                    Log.i(TAG, "resendVerificationEmail: uid=${firebaseUser.uid} already verified")
+                    Result.success(Unit)
+                } else {
+                    firebaseUser.sendEmailVerification().awaitTask()
+                    Log.i(TAG, "resendVerificationEmail: sent to uid=${firebaseUser.uid}")
+                    Result.success(Unit)
+                }
+            } catch (e: Exception) {
+                Log.e(
+                    TAG,
+                    "resendVerificationEmail: send failed: ${e.javaClass.simpleName}: ${e.message}",
+                    e,
+                )
+                Result.failure(e)
+            }
+        } finally {
+            // Sign out again: verification alone must never open a session.
+            // The flag is cleared on EVERY exit path so the session-restore
+            // listener is never permanently muted.
+            auth.signOut()
+            resendInProgress = false
         }
     }
 

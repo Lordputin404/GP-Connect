@@ -18,6 +18,8 @@ sealed interface LoginResult {
     data object AccountNotConfigured : LoginResult
     /** Profile exists but enabled == false (or the Auth account is disabled). */
     data object AccountDisabled : LoginResult
+    /** Authenticated, but the Firebase email has not been verified yet. */
+    data object EmailNotVerified : LoginResult
     /** Account exists but its role does not match the login form used. */
     data object WrongRole : LoginResult
     /** Network/Firebase unreachable or unknown failure. */
@@ -67,6 +69,17 @@ interface AuthRepository {
     val isResolvingSession: StateFlow<Boolean>
 
     suspend fun login(email: String, password: String, expectation: LoginExpectation): LoginResult
+
+    /**
+     * Re-sends the Firebase verification email to [email]. Firebase only sends
+     * to the signed-in user, so this temporarily signs in with [password]
+     * (reusing the credentials of the login attempt that failed with
+     * [LoginResult.EmailNotVerified]) and always signs out again — an
+     * unverified account never holds a live session. Verification alone grants
+     * nothing: the signup-request approval + enabled profile checks still
+     * apply at login.
+     */
+    suspend fun resendVerificationEmail(email: String, password: String): Result<Unit>
 
     /**
      * Self-service signup. Creates the Firebase Auth account (the password goes

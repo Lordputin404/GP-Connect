@@ -20,6 +20,11 @@
     <string name="error_rate_limited">Too many attempts. Try again later.</string>
     <string name="error_provider_misconfigured">Sign-in is not configured for this app yet. Contact the administrator.</string>
     <string name="error_profile_access">Your profile could not be loaded. Contact the administrator (Firestore access was denied).</string>
+    <string name="error_email_not_verified">Your email is not verified yet. Check your inbox for the verification link we sent when you signed up, then sign in again.</string>
+    <string name="login_resend_verification">Resend verification email</string>
+    <string name="login_resending_verification">Sending…</string>
+    <string name="login_resend_success">Verification email sent. Check your inbox, then sign in again.</string>
+    <string name="login_resend_failed">Could not send the email. Check your connection and try again in a moment.</string>
     <string name="cd_toggle_password">Show or hide password</string>
     <string name="action_admin_login">Admin Login</string>
 
@@ -201,6 +206,7 @@
     <string name="signup_success_title">Request submitted</string>
     <string name="signup_success_body">Your signup request has been sent to your department HOD. You will be able to log in once it is approved.</string>
     <string name="signup_success_body_hod">Your HOD signup request has been sent to the college Super Admin. You will be able to log in once it is approved.</string>
+    <string name="signup_success_verify_hint">We have also sent a verification link to your email. Verify it — you will need it to sign in once you are approved.</string>
     <string name="signup_back_to_login">Back to login</string>
     <string name="signup_error_email_in_use">An account with this email already exists.</string>
     <string name="signup_error_rejected">Your signup request was rejected. Contact your department HOD.</string>

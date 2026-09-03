@@ -14,6 +14,7 @@ fun loginErrorMessage(error: LoginResult, adminForm: Boolean): String = when (er
     LoginResult.InvalidCredentials -> stringResource(R.string.error_invalid_credentials)
     LoginResult.AccountNotConfigured -> stringResource(R.string.error_account_not_configured)
     LoginResult.AccountDisabled -> stringResource(R.string.error_account_disabled)
+    LoginResult.EmailNotVerified -> stringResource(R.string.error_email_not_verified)
     LoginResult.WrongRole -> stringResource(
         if (adminForm) R.string.error_not_admin_account else R.string.error_not_student_account,
     )
