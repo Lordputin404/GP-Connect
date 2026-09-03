@@ -28,6 +28,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -164,6 +166,57 @@ fun StudentLoginScreen(onAdminLoginClick: () -> Unit, onSignupClick: () -> Unit)
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
+        }
+
+        if (state.isEmailUnverified) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Column(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = stringResource(R.string.error_email_not_verified),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = viewModel::resendVerificationEmail,
+                    enabled = !state.isResending,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (state.isResending) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.login_resending_verification))
+                    } else {
+                        Text(stringResource(R.string.login_resend_verification))
+                    }
+                }
+                state.resendResult?.let { sent ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(
+                            if (sent) {
+                                R.string.login_resend_success
+                            } else {
+                                R.string.login_resend_failed
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (sent) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
