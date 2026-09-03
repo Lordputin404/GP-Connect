@@ -45,6 +45,7 @@ import com.gumlapolytechnic.gpconnect.ui.login.SessionViewModel
 @Composable
 fun CanteenCartScreen(
     onBack: () -> Unit,
+    onCheckoutClick: () -> Unit,
     sessionViewModel: SessionViewModel,
 ) {
     val cartState by sessionViewModel.cartState.collectAsStateWithLifecycle()
@@ -105,6 +106,15 @@ fun CanteenCartScreen(
                 itemCount = cartState.itemCount,
                 totalQuantity = cartState.totalQuantity,
             )
+            Spacer(modifier = Modifier.height(16.dp))
+            // Proceed to Checkout button
+            androidx.compose.material3.Button(
+                onClick = onCheckoutClick,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.canteen_cart_proceed_checkout))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

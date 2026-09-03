@@ -32,6 +32,7 @@ import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
 import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenCartScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenCheckoutScreen
 import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenScreen
 import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenItemDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
@@ -50,6 +51,7 @@ object Routes {
     const val CANTEEN = "canteen"
     const val CANTEEN_ITEM = "canteen/item/{itemId}"
     const val CANTEEN_CART = "canteen/cart"
+    const val CANTEEN_CHECKOUT = "canteen/checkout"
     const val PROFILE = "profile"
 
     const val NOTICE_DETAIL = "notice/{noticeId}"
@@ -156,6 +158,16 @@ composable(Routes.HOME) {
             composable(Routes.CANTEEN_CART) {
                 CanteenCartScreen(
                     onBack = { navController.popBackStack() },
+                    onCheckoutClick = { navController.navigate(Routes.CANTEEN_CHECKOUT) },
+                    sessionViewModel = sessionViewModel,
+                )
+            }
+            composable(Routes.CANTEEN_CHECKOUT) {
+                CanteenCheckoutScreen(
+                    onBack = { navController.popBackStack() },
+                    onFinish = {
+                        navController.popBackStack(Routes.CANTEEN, inclusive = false)
+                    },
                     sessionViewModel = sessionViewModel,
                 )
             }

@@ -185,6 +185,27 @@
     <string name="canteen_cart_subtotal">Subtotal</string>
     <string name="canteen_cart_subtotal_disclaimer">Display only. Final price is set at checkout.</string>
     <string name="canteen_in_cart_format">In cart: %1$d</string>
+
+    <!-- Canteen Checkout -->
+    <string name="canteen_checkout_title">Checkout</string>
+    <string name="canteen_checkout_empty_title">Nothing to checkout</string>
+    <string name="canteen_checkout_empty_body">Your cart is empty. Add items first.</string>
+    <string name="canteen_checkout_placing">Placing your order…</string>
+    <string name="canteen_checkout_retry">Retry</string>
+    <string name="canteen_checkout_back_to_cart">Back to Cart</string>
+    <string name="canteen_checkout_place_order">Place Order</string>
+    <string name="canteen_checkout_display_only_disclaimer">Display only. Final price is set at checkout.</string>
+    <string name="canteen_checkout_items_format">Items: %1$d</string>
+    <string name="canteen_checkout_quantity_format">Qty: %1$d</string>
+    <string name="canteen_checkout_subtotal">Subtotal</string>
+    <string name="canteen_cart_proceed_checkout">Proceed to Checkout</string>
+
+    <!-- Canteen Checkout Success -->
+    <string name="canteen_checkout_success_title">Order Placed</string>
+    <string name="canteen_checkout_success_message">Your order has been successfully placed.</string>
+    <string name="canteen_checkout_order_id_format">Order ID: %1$s</string>
+    <string name="canteen_checkout_back_to_canteen">Back to Canteen</string>
+
     <string name="feature_departments_description">Explore departments, courses and their activities.</string>
     <string name="feature_faculty_title">Faculty</string>
     <string name="feature_faculty_description">Faculty members, subjects and office hours.</string>
