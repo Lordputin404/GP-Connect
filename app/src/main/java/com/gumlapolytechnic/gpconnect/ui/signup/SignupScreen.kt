@@ -42,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -88,6 +89,7 @@ fun SignupScreen(onBack: () -> Unit) {
     ) { innerPadding ->
         if (state.submitted) {
             SignupSubmittedPanel(
+                isHodApplicant = state.isHodApplicant,
                 onBack = onBack,
                 modifier = Modifier
                     .fillMaxSize()
@@ -109,7 +111,11 @@ fun SignupScreen(onBack: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.signup_intro),
+                text = if (state.isHodApplicant) {
+                    stringResource(R.string.signup_hod_intro)
+                } else {
+                    stringResource(R.string.signup_intro)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -123,13 +129,6 @@ fun SignupScreen(onBack: () -> Unit) {
                         onClick = { viewModel.onRoleChange(role) },
                     )
                 }
-            }
-            if (state.isHodApplicant) {
-                Text(
-                    text = stringResource(R.string.signup_hod_intro),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
 
             OutlinedTextField(
@@ -334,7 +333,11 @@ fun SignupScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun SignupSubmittedPanel(onBack: () -> Unit, modifier: Modifier = Modifier) {
+private fun SignupSubmittedPanel(
+    isHodApplicant: Boolean,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -359,12 +362,23 @@ private fun SignupSubmittedPanel(onBack: () -> Unit, modifier: Modifier = Modifi
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text = stringResource(R.string.signup_success_body),
+                text = if (isHodApplicant) {
+                    stringResource(R.string.signup_success_body_hod)
+                } else {
+                    stringResource(R.string.signup_success_body)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
             )
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.signup_success_verify_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
         Spacer(modifier = Modifier.height(24.dp))
         OutlinedButton(
             onClick = onBack,
