@@ -20,6 +20,10 @@ sealed interface LoginResult {
     data object AccountDisabled : LoginResult
     /** Authenticated, but the Firebase email has not been verified yet. */
     data object EmailNotVerified : LoginResult
+    /** Not enabled, but the signup request is still PENDING — awaiting the department HOD. */
+    data object AccountPendingApproval : LoginResult
+    /** Not enabled HOD applicant — awaiting the college Super Admin's approval. */
+    data object HodAccountPendingApproval : LoginResult
     /** Account exists but its role does not match the login form used. */
     data object WrongRole : LoginResult
     /** Network/Firebase unreachable or unknown failure. */

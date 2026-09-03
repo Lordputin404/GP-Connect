@@ -3,6 +3,7 @@ package com.gumlapolytechnic.gpconnect.data.firebase
 import android.util.Log
 import com.gumlapolytechnic.gpconnect.data.model.SignupSubmission
 import com.gumlapolytechnic.gpconnect.data.model.User
+import com.gumlapolytechnic.gpconnect.data.model.UserRole
 import com.gumlapolytechnic.gpconnect.data.model.isAdmin
 import com.gumlapolytechnic.gpconnect.data.repository.AuthRepository
 import com.gumlapolytechnic.gpconnect.data.repository.LoginExpectation
@@ -216,21 +217,42 @@ class FirebaseAuthRepository : AuthRepository {
                 )
             }
 
+        // Email verification is an independent gate: an approved and enabled
+        // profile is still unusable until the Firebase email is verified.
+        // Checked from the freshly signed-in Firebase user (the token cache
+        // may be stale after verifying from a web link). This branch stays
+        // FIRST: a not-yet-approved applicant whose email is also unverified
+        // must be told to verify, not that their account is disabled/pending.
+        if (!firebaseUser.isEmailVerified) {
+            Log.w(TAG, "Email not verified for uid=${profile.id}")
+            auth.signOut()
+            return LoginResult.EmailNotVerified
+        }
+
+        if (!profile.enabled) {
+            // A signup account starts disabled. That is "pending approval" —
+            // not genuinely disabled — when its own signup request is still
+            // PENDING. The rules allow the caller to read its own request
+            // document, so the distinction is made here, not in the UI. The
+            // requestedRole distinguishes a HOD applicant (Super Admin decides)
+            // from a member applicant (department HOD decides); the profile's
+            // own role is always STUDENT until the decision lands.
+            val pendingRole = pendingSignupRequestedRole(firebaseUser.uid)
+            val result = when (pendingRole) {
+                UserRole.FACULTY_ADMIN.name -> LoginResult.HodAccountPendingApproval
+                null -> LoginResult.AccountDisabled
+                else -> LoginResult.AccountPendingApproval
+            }
+            Log.w(
+                TAG,
+                "Profile not enabled for uid=${profile.id} — " +
+                    "pending signup requestedRole: $pendingRole",
+            )
+            auth.signOut()
+            return result
+        }
+
         return when {
-            !profile.enabled -> {
-                Log.w(TAG, "Profile disabled for uid=${profile.id}")
-                auth.signOut()
-                LoginResult.AccountDisabled
-            }
-            // Email verification is a second, independent gate: an approved and
-            // enabled profile is still unusable until the Firebase email is
-            // verified. Checked from the freshly signed-in Firebase user (the
-            // token cache may be stale after verifying from a web link).
-            !firebaseUser.isEmailVerified -> {
-                Log.w(TAG, "Email not verified for uid=${profile.id}")
-                auth.signOut()
-                LoginResult.EmailNotVerified
-            }
             expectation == LoginExpectation.MEMBER && profile.role.isAdmin -> {
                 Log.w(TAG, "Role mismatch: expected a student/teacher account, got ${profile.role}")
                 auth.signOut()
@@ -423,6 +445,28 @@ class FirebaseAuthRepository : AuthRepository {
             Log.e(TAG, "Profile conversion returned null for uid=$uid (malformed document?)")
         }
         return user
+    }
+
+    /**
+     * Reads the caller's own `signupRequests/{uid}` to tell a pending signup
+     * apart from a genuinely disabled account. The rules permit `get` on the
+     * caller's own request, so this needs no extra authority. Returns the
+     * request's `requestedRole` while it is PENDING (a HOD applicant's profile
+     * still says STUDENT — the requested role lives only on the request), or
+     * null once decided/missing. Any read failure resolves to null: the caller
+     * then sees the generic disabled message rather than a wrong "pending"
+     * promise.
+     */
+    private suspend fun pendingSignupRequestedRole(uid: String): String? = try {
+        val snapshot = firestore.collection(SIGNUP_REQUESTS).document(uid).get().awaitTask()
+        if (snapshot.exists() && snapshot.getString("status") == "PENDING") {
+            snapshot.getString("requestedRole")
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Signup request read failed for uid=$uid: ${e.message}")
+        null
     }
 
     private fun mapAuthError(e: FirebaseAuthException): LoginResult = when (e.errorCode) {

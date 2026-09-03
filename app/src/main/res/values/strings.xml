@@ -14,6 +14,8 @@
     <string name="error_invalid_credentials">Incorrect email or password</string>
     <string name="error_account_not_configured">This account is not configured in GP Connect. Contact the college administrator.</string>
     <string name="error_account_disabled">This account has been disabled.</string>
+    <string name="error_account_pending_approval">Your account is awaiting approval. Please wait for your department HOD to approve your signup request.</string>
+    <string name="error_hod_account_pending_approval">Your HOD account is awaiting approval from the college Super Admin.</string>
     <string name="error_not_student_account">This is not a student account. Use Admin Login instead.</string>
     <string name="error_not_admin_account">This is not an administrator account.</string>
     <string name="error_network">Network error — check your connection and try again.</string>
