@@ -200,6 +200,42 @@
     <string name="canteen_checkout_subtotal">Subtotal</string>
     <string name="canteen_cart_proceed_checkout">Proceed to Checkout</string>
 
+    <!-- Canteen Orders -->
+    <string name="canteen_orders_title">My Orders</string>
+    <string name="canteen_orders_cd">Open my orders</string>
+    <string name="canteen_orders_empty_title">No orders yet</string>
+    <string name="canteen_orders_empty_body">Once you place a canteen order it will appear here.</string>
+    <string name="canteen_orders_error_body">Could not load your orders. Check your connection and try again.</string>
+    <string name="canteen_orders_section_active">Active</string>
+    <string name="canteen_orders_section_history">History</string>
+    <string name="canteen_order_detail_title">Order Details</string>
+    <string name="canteen_order_detail_items">Items</string>
+    <string name="canteen_order_detail_total">Total</string>
+    <string name="canteen_order_detail_created_format">Placed %1$s</string>
+    <string name="canteen_order_detail_updated_format">Updated %1$s</string>
+    <string name="canteen_order_detail_not_found_title">Order not found</string>
+    <string name="canteen_order_detail_not_found_body">This order may have been removed.</string>
+    <string name="canteen_order_detail_cancel_title">Cancel order</string>
+    <string name="canteen_order_detail_cancel_button">Cancel Order</string>
+    <string name="canteen_order_detail_cancel_reason_label">Reason (optional)</string>
+    <string name="canteen_order_detail_cancel_dialog_title">Cancel this order?</string>
+    <string name="canteen_order_detail_cancel_dialog_body">This cannot be undone. The order will be marked as cancelled.</string>
+    <string name="canteen_order_detail_cancel_dialog_confirm">Cancel order</string>
+    <string name="canteen_order_detail_cancel_dialog_dismiss">Keep order</string>
+    <string name="canteen_order_detail_cancel_in_progress">Cancelling…</string>
+    <string name="canteen_order_detail_cancel_success">Order cancelled</string>
+    <string name="canteen_order_detail_cancel_error">Could not cancel the order. Please try again.</string>
+    <string name="canteen_order_detail_cancellation_reason_format">Cancellation reason: %1$s</string>
+    <string name="canteen_order_detail_status_format">Status: %1$s</string>
+    <string name="canteen_order_detail_quantity_format">Qty: %1$d</string>
+    <string name="canteen_order_detail_unit_price_format">%1$s each</string>
+    <string name="canteen_order_status_pending">Pending</string>
+    <string name="canteen_order_status_confirmed">Confirmed</string>
+    <string name="canteen_order_status_preparing">Preparing</string>
+    <string name="canteen_order_status_ready">Ready for pickup</string>
+    <string name="canteen_order_status_completed">Completed</string>
+    <string name="canteen_order_status_cancelled">Cancelled</string>
+
     <!-- Canteen Checkout Success -->
     <string name="canteen_checkout_success_title">Order Placed</string>
     <string name="canteen_checkout_success_message">Your order has been successfully placed.</string>

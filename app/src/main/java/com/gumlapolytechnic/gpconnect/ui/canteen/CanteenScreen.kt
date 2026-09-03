@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.List
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,15 +32,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
+import com.gumlapolytechnic.gpconnect.ui.navigation.Routes
 import com.gumlapolytechnic.gpconnect.ui.components.CategoryChip
 import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
 import com.gumlapolytechnic.gpconnect.ui.components.ErrorState
@@ -47,6 +51,7 @@ import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
 import com.gumlapolytechnic.gpconnect.ui.components.SectionHeader
 import com.gumlapolytechnic.gpconnect.ui.login.SessionViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel as vm
+import androidx.navigation.NavHostController
 
 /**
  * Main canteen catalog screen showing categories and available menu items.
@@ -57,6 +62,7 @@ fun CanteenScreen(
     onItemClick: (String) -> Unit,
     onCartClick: () -> Unit,
     onBack: () -> Unit = {},
+    navController: NavHostController = rememberNavController(),
 ) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: CanteenViewModel = viewModel {
@@ -98,6 +104,12 @@ fun CanteenScreen(
                                 contentDescription = stringResource(R.string.canteen_cart_cd),
                             )
                         }
+                    }
+                    IconButton(onClick = { navController.navigate(Routes.CANTEEN_ORDERS) }) {
+                        Icon(
+                            imageVector = Icons.Outlined.List,
+                            contentDescription = stringResource(R.string.canteen_orders_cd),
+                        )
                     }
                 },
             )

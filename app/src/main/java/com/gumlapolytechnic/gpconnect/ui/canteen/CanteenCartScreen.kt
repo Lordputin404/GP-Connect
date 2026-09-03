@@ -34,8 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.CartItem
+import com.gumlapolytechnic.gpconnect.ui.navigation.Routes
 import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
 import com.gumlapolytechnic.gpconnect.ui.login.SessionViewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 
 /**
  * Student canteen cart screen. All totals shown here are display-only;
@@ -47,6 +50,7 @@ fun CanteenCartScreen(
     onBack: () -> Unit,
     onCheckoutClick: () -> Unit,
     sessionViewModel: SessionViewModel,
+    navController: NavHostController = rememberNavController(),
 ) {
     val cartState by sessionViewModel.cartState.collectAsStateWithLifecycle()
 
@@ -115,6 +119,13 @@ fun CanteenCartScreen(
                 Text(stringResource(R.string.canteen_cart_proceed_checkout))
             }
             Spacer(modifier = Modifier.height(8.dp))
+            // My Orders link
+            androidx.compose.material3.TextButton(
+                onClick = { navController.navigate(Routes.CANTEEN_ORDERS) },
+                modifier = Modifier.align(Alignment.End),
+            ) {
+                Text(stringResource(R.string.canteen_orders_cd))
+            }
         }
     }
 }
@@ -241,7 +252,7 @@ private fun CartTotalsFooter(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = formatPaise(subtotalPaise),
+                    text = formatPaiseForCart(subtotalPaise),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -257,12 +268,11 @@ private fun CartTotalsFooter(
 }
 
 @Composable
-private fun formatPaise(paise: Long): String = String.format("₹%.2f", paise / 100.0)
-
-@Composable
 private fun TextButton(
     onClick: () -> Unit,
     content: @Composable () -> Unit,
 ) {
     androidx.compose.material3.TextButton(onClick = onClick, content = { content() })
 }
+
+private fun formatPaiseForCart(paise: Long): String = String.format("₹%.2f", paise / 100.0)

@@ -33,6 +33,8 @@ import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
 import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenCartScreen
 import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenCheckoutScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenOrderDetailScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenOrderHistoryScreen
 import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenScreen
 import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenItemDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
@@ -52,6 +54,8 @@ object Routes {
     const val CANTEEN_ITEM = "canteen/item/{itemId}"
     const val CANTEEN_CART = "canteen/cart"
     const val CANTEEN_CHECKOUT = "canteen/checkout"
+    const val CANTEEN_ORDERS = "canteen/orders"
+    const val CANTEEN_ORDER = "canteen/order/{orderId}"
     const val PROFILE = "profile"
 
     const val NOTICE_DETAIL = "notice/{noticeId}"
@@ -59,10 +63,12 @@ object Routes {
     const val FEATURE_PLACEHOLDER = "feature/{feature}"
     const val FEATURE_ARG = "feature"
     const val CANTEEN_ITEM_ARG = "itemId"
+    const val CANTEEN_ORDER_ARG = "orderId"
 
     fun noticeDetail(noticeId: String) = "notice/$noticeId"
     fun featurePlaceholder(feature: CampusFeature) = "feature/${feature.routeArg}"
     fun canteenItem(itemId: String) = "canteen/item/$itemId"
+    fun canteenOrder(orderId: String) = "canteen/order/$orderId"
 }
 
 private enum class TopLevelDestination(
@@ -142,6 +148,7 @@ composable(Routes.HOME) {
                         navController.navigate(Routes.canteenItem(itemId))
                     },
                     onCartClick = { navController.navigate(Routes.CANTEEN_CART) },
+                    navController = navController,
                 )
             }
             composable(Routes.CANTEEN_ITEM) { entry ->
@@ -170,6 +177,23 @@ composable(Routes.HOME) {
                     },
                     sessionViewModel = sessionViewModel,
                 )
+            }
+            composable(Routes.CANTEEN_ORDERS) {
+                CanteenOrderHistoryScreen(
+                    onBack = { navController.popBackStack() },
+                    onOrderClick = { orderId ->
+                        navController.navigate(Routes.canteenOrder(orderId))
+                    },
+                )
+            }
+            composable(Routes.CANTEEN_ORDER) { entry ->
+                val orderId = entry.arguments?.getString(Routes.CANTEEN_ORDER_ARG)
+                if (orderId != null) {
+                    CanteenOrderDetailScreen(
+                        orderId = orderId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
             composable(Routes.NOTICES) {
                 NoticesScreen(

@@ -334,7 +334,7 @@ private fun CheckoutTotalsFooter(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = formatPaise(subtotalPaise),
+                    text = formatPaiseForCheckout(subtotalPaise),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -349,5 +349,4 @@ private fun CheckoutTotalsFooter(
     }
 }
 
-@Composable
-private fun formatPaise(paise: Long): String = String.format("₹%.2f", paise / 100.0)
+private fun formatPaiseForCheckout(paise: Long): String = String.format("₹%.2f", paise / 100.0)
