@@ -31,9 +31,11 @@ import androidx.navigation.compose.rememberNavController
 import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenCartScreen
 import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenScreen
 import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenItemDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
+import com.gumlapolytechnic.gpconnect.ui.login.SessionViewModel
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticeDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticesScreen
 import com.gumlapolytechnic.gpconnect.ui.placeholder.CampusFeature
@@ -47,6 +49,7 @@ object Routes {
     const val CALENDAR = "calendar"
     const val CANTEEN = "canteen"
     const val CANTEEN_ITEM = "canteen/item/{itemId}"
+    const val CANTEEN_CART = "canteen/cart"
     const val PROFILE = "profile"
 
     const val NOTICE_DETAIL = "notice/{noticeId}"
@@ -83,7 +86,11 @@ private val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet(
  * never stack duplicate destinations and each tab keeps its own state.
  */
 @Composable
-fun StudentApp(user: User, onLogout: () -> Unit) {
+fun StudentApp(
+    user: User,
+    onLogout: () -> Unit,
+    sessionViewModel: SessionViewModel,
+) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -128,18 +135,29 @@ composable(Routes.HOME) {
                 )
             }
             composable(Routes.CANTEEN) {
-                CanteenScreen(onItemClick = { itemId ->
-                    navController.navigate(Routes.canteenItem(itemId))
-                })
+                CanteenScreen(
+                    onItemClick = { itemId ->
+                        navController.navigate(Routes.canteenItem(itemId))
+                    },
+                    onCartClick = { navController.navigate(Routes.CANTEEN_CART) },
+                )
             }
             composable(Routes.CANTEEN_ITEM) { entry ->
                 val itemId = entry.arguments?.getString(Routes.CANTEEN_ITEM_ARG)
                 if (itemId != null) {
                     CanteenItemDetailScreen(
                         itemId = itemId,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onCartClick = { navController.navigate(Routes.CANTEEN_CART) },
+                        sessionViewModel = sessionViewModel,
                     )
                 }
+            }
+            composable(Routes.CANTEEN_CART) {
+                CanteenCartScreen(
+                    onBack = { navController.popBackStack() },
+                    sessionViewModel = sessionViewModel,
+                )
             }
             composable(Routes.NOTICES) {
                 NoticesScreen(

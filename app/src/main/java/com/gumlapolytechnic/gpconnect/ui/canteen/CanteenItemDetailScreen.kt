@@ -15,6 +15,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,6 +42,7 @@ import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
 import com.gumlapolytechnic.gpconnect.ui.components.ErrorState
 import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
+import com.gumlapolytechnic.gpconnect.ui.login.SessionViewModel
 
 /**
  * Detail screen for a canteen menu item.
@@ -47,15 +52,21 @@ import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
 fun CanteenItemDetailScreen(
     itemId: String,
     onBack: () -> Unit,
+    onCartClick: () -> Unit,
+    sessionViewModel: SessionViewModel,
 ) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: CanteenViewModel = viewModel {
         CanteenViewModel(app.container.canteenRepository)
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val cartState by sessionViewModel.cartState.collectAsStateWithLifecycle()
+    val cartCount = cartState.totalQuantity
 
     // Find the item in the catalog state
     val item = state.menuItems.firstOrNull { it.id == itemId }
+    val isUnavailable = item != null && !item.isAvailable
+    val inCartQuantity = cartState.quantityOf(itemId)
 
     Scaffold(
         topBar = {
@@ -67,6 +78,22 @@ fun CanteenItemDetailScreen(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.cd_navigate_back),
                         )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onCartClick) {
+                        BadgedBox(
+                            badge = {
+                                if (cartCount > 0) {
+                                    Badge { Text(cartCount.toString()) }
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ShoppingCart,
+                                contentDescription = stringResource(R.string.canteen_cart_cd),
+                            )
+                        }
                     }
                 },
             )
@@ -177,40 +204,27 @@ fun CanteenItemDetailScreen(
                             Divider()
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Add to Cart placeholder
-                            Surface(
-                                shape = MaterialTheme.shapes.medium,
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
+                            if (inCartQuantity > 0) {
+                                Text(
+                                    text = stringResource(R.string.canteen_in_cart_format, inCartQuantity),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            Button(
+                                onClick = { item?.let { sessionViewModel.addToCart(it) } },
+                                enabled = item != null && item.isAvailable,
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = stringResource(R.string.canteen_add_to_cart_coming_soon),
-                                                style = MaterialTheme.typography.titleSmall,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            )
-                                            Text(
-                                                text = stringResource(R.string.canteen_phase_8e_placeholder),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                                            )
-                                        }
-                                        Icon(
-                                            imageVector = Icons.Outlined.Restaurant,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.size(24.dp),
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = when {
+                                        item == null -> stringResource(R.string.canteen_add_to_cart)
+                                        isUnavailable -> stringResource(R.string.canteen_item_unavailable)
+                                        else -> stringResource(R.string.canteen_add_to_cart)
+                                    },
+                                )
                             }
                         }
                     }

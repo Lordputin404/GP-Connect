@@ -2,10 +2,12 @@ package com.gumlapolytechnic.gpconnect.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gumlapolytechnic.gpconnect.data.model.CanteenMenuItem
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.data.model.UserRole
 import com.gumlapolytechnic.gpconnect.data.model.isAdmin
 import com.gumlapolytechnic.gpconnect.data.repository.AuthRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -58,7 +60,38 @@ class SessionViewModel(private val authRepository: AuthRepository) : ViewModel()
         initialValue = SessionState.Checking,
     )
 
+    // --- Local-only canteen cart --------------------------------------------
+    // Cart lives on the session because it must survive navigation between
+    // canteen screens but must be cleared on logout. Never persisted, never
+    // written to Firestore.
+
+    private val _cartState = MutableStateFlow(CartState())
+    val cartState: StateFlow<CartState> = _cartState
+
+    fun addToCart(menuItem: CanteenMenuItem) {
+        if (!menuItem.isAvailable) return
+        _cartState.value = _cartState.value.addItem(menuItem)
+    }
+
+    fun incrementCartItem(menuItemId: String) {
+        _cartState.value = _cartState.value.increment(menuItemId)
+    }
+
+    fun decrementCartItem(menuItemId: String) {
+        _cartState.value = _cartState.value.decrement(menuItemId)
+    }
+
+    fun removeCartItem(menuItemId: String) {
+        _cartState.value = _cartState.value.remove(menuItemId)
+    }
+
+    fun clearCart() {
+        _cartState.value = CartState()
+    }
+
     fun logout() {
+        // Cart is session-scoped: drop it on logout.
+        _cartState.value = CartState()
         viewModelScope.launch { authRepository.logout() }
     }
 }

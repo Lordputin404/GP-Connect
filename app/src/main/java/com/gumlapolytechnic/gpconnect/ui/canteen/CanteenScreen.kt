@@ -18,6 +18,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +45,8 @@ import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
 import com.gumlapolytechnic.gpconnect.ui.components.ErrorState
 import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
 import com.gumlapolytechnic.gpconnect.ui.components.SectionHeader
+import com.gumlapolytechnic.gpconnect.ui.login.SessionViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel as vm
 
 /**
  * Main canteen catalog screen showing categories and available menu items.
@@ -50,6 +55,7 @@ import com.gumlapolytechnic.gpconnect.ui.components.SectionHeader
 @Composable
 fun CanteenScreen(
     onItemClick: (String) -> Unit,
+    onCartClick: () -> Unit,
     onBack: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
@@ -57,6 +63,14 @@ fun CanteenScreen(
         CanteenViewModel(app.container.canteenRepository)
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Cart count is exposed via the same SessionViewModel that the cart screen
+    // uses, keeping a single source of truth.
+    val sessionViewModel: SessionViewModel = vm {
+        SessionViewModel(app.container.authRepository)
+    }
+    val cartState by sessionViewModel.cartState.collectAsStateWithLifecycle()
+    val cartCount = cartState.totalQuantity
 
     Scaffold(
         topBar = {
@@ -68,6 +82,22 @@ fun CanteenScreen(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.cd_navigate_back),
                         )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onCartClick) {
+                        BadgedBox(
+                            badge = {
+                                if (cartCount > 0) {
+                                    Badge { Text(cartCount.toString()) }
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ShoppingCart,
+                                contentDescription = stringResource(R.string.canteen_cart_cd),
+                            )
+                        }
                     }
                 },
             )
