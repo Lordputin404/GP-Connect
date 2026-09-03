@@ -76,7 +76,7 @@ private enum class TopLevelDestination(
 private val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
 
 /**
- * Student app shell. Bottom navigation covers the four top-level
+ * Student app shell. Bottom navigation covers the five top-level
  * destinations; notice detail and feature placeholders open as ordinary
  * destinations above them (bottom bar hidden) with normal back behavior.
  * Tab taps use launchSingleTop + saveState/restoreState so repeated taps
@@ -129,7 +129,7 @@ composable(Routes.HOME) {
             }
             composable(Routes.CANTEEN) {
                 CanteenScreen(onItemClick = { itemId ->
-                    navController.navigate("canteen/item/$itemId")
+                    navController.navigate(Routes.canteenItem(itemId))
                 })
             }
             composable(Routes.CANTEEN_ITEM) { entry ->

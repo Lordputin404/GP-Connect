@@ -154,6 +154,24 @@
     <string name="feature_canteen_title">Canteen</string>
     <string name="feature_canteen_description">Menus, timings and daily specials from the campus canteen.</string>
     <string name="feature_departments_title">Departments</string>
+
+    <!-- Canteen (student catalog) -->
+    <string name="canteen_title">Canteen</string>
+    <string name="canteen_section_categories">Categories</string>
+    <string name="canteen_section_menu">Menu</string>
+    <string name="canteen_category_all">All</string>
+    <string name="canteen_empty_categories_title">No categories available</string>
+    <string name="canteen_empty_categories_body">No enabled categories found.</string>
+    <string name="canteen_empty_menu_title">No items available</string>
+    <string name="canteen_empty_menu_body">No available menu items in this category.</string>
+    <string name="canteen_item_unavailable">Item unavailable</string>
+    <string name="canteen_item_not_found_title">Item not found</string>
+    <string name="canteen_item_not_found_body">This menu item may have been removed.</string>
+    <string name="canteen_error_body">Could not load canteen data. Check your connection and try again.</string>
+    <string name="canteen_item_detail_title">Item Details</string>
+    <string name="canteen_add_to_cart_coming_soon">Add to Cart — coming in Phase 8E</string>
+    <string name="canteen_item_available">Available</string>
+    <string name="canteen_phase_8e_placeholder">Cart functionality coming in Phase 8E</string>
     <string name="feature_departments_description">Explore departments, courses and their activities.</string>
     <string name="feature_faculty_title">Faculty</string>
     <string name="feature_faculty_description">Faculty members, subjects and office hours.</string>

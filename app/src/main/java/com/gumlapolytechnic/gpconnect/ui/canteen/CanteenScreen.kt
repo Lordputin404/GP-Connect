@@ -16,19 +16,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Restaurant
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -65,7 +61,7 @@ fun CanteenScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.tab_canteen)) },
+                title = { Text(stringResource(R.string.canteen_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -83,66 +79,58 @@ fun CanteenScreen(
                 .padding(innerPadding),
             verticalArrangement = Arrangement.Top,
         ) {
-            // Search bar
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                placeholder = { Text(stringResource(R.string.search_hint)) },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                singleLine = true,
-                shape = MaterialTheme.shapes.small,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
             // Categories
             SectionHeader(
-                title = stringResource(R.string.section_quick_access), // Reusing for now
+                title = stringResource(R.string.canteen_section_categories),
                 actionLabel = null,
                 onActionClick = null,
             )
-            if (state.isLoading) {
-                // Show category shimmers
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    repeat(3) {
-                        CategoryChip(
-                            label = "Loading...",
-                            selected = false,
-                            onClick = {},
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+            when {
+                state.isLoading -> {
+                    // Show category shimmers using existing component
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        repeat(3) {
+                            NoticeCardShimmer()
+                        }
                     }
                 }
-            } else if (state.categories.isEmpty()) {
-                EmptyState(
-                    title = stringResource(R.string.home_no_pinned), // Reusing for now
-                    message = stringResource(R.string.home_error_body), // Reusing for now
-                )
-            } else {
-                // Categories row with horizontal scrolling
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                ) {
-                    // Add "All" chip first
-                    CategoryChip(
-                        label = stringResource(R.string.filter_all),
-                        selected = state.selectedCategoryId == null,
-                        onClick = {
-                            viewModel.selectCategory(null)
-                        },
+                state.isError -> {
+                    ErrorState(
+                        message = stringResource(R.string.canteen_error_body),
+                        onRetry = { /* Repository will retry on re-subscription */ },
                     )
-                    state.categories.forEach { category ->
+                }
+                state.categories.isEmpty() -> {
+                    EmptyState(
+                        title = stringResource(R.string.canteen_empty_categories_title),
+                        message = stringResource(R.string.canteen_empty_categories_body),
+                    )
+                }
+                else -> {
+                    // Categories row with horizontal scrolling
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                    ) {
+                        // Add "All" chip first
                         CategoryChip(
-                            label = category.name,
-                            selected = state.selectedCategoryId == category.id,
+                            label = stringResource(R.string.canteen_category_all),
+                            selected = state.selectedCategoryId == null,
                             onClick = {
-                                viewModel.selectCategory(category.id)
+                                viewModel.selectCategory(null)
                             },
                         )
+                        state.categories.forEach { category ->
+                            CategoryChip(
+                                label = category.name,
+                                selected = state.selectedCategoryId == category.id,
+                                onClick = {
+                                    viewModel.selectCategory(category.id)
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -150,117 +138,91 @@ fun CanteenScreen(
 
             // Menu items
             SectionHeader(
-                title = stringResource(R.string.section_recent_notices), // Reusing for now
+                title = stringResource(R.string.canteen_section_menu),
                 actionLabel = null,
                 onActionClick = null,
             )
-            when (state.isLoading) {
-                true -> {
-                    // Show menu item shimmers
+            when {
+                state.isLoading -> {
+                    // Show menu item shimmers using existing component
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         repeat(6) {
-                            // Simple placeholder for menu item shimmer
+                            NoticeCardShimmer()
+                        }
+                    }
+                }
+                state.isError -> {
+                    ErrorState(
+                        message = stringResource(R.string.canteen_error_body),
+                        onRetry = { /* Repository will retry on re-subscription */ },
+                    )
+                }
+                state.menuItems.isEmpty() -> {
+                    EmptyState(
+                        title = stringResource(R.string.canteen_empty_menu_title),
+                        message = stringResource(R.string.canteen_empty_menu_body),
+                    )
+                }
+                else -> {
+                    // Display menu items
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(state.menuItems, key = { it.id }) { item ->
+                            // Menu item card
                             Surface(
                                 shape = MaterialTheme.shapes.medium,
                                 color = MaterialTheme.colorScheme.surface,
                                 tonalElevation = 1.dp,
+                                onClick = { onItemClick(item.id) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(16.dp),
                             ) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Loading...",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Loading...",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Loading...",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                }
-                            }
-                        }
-                    }
-                }
-                false -> {
-                    if (state.menuItems.isEmpty()) {
-                        EmptyState(
-                            title = stringResource(R.string.notices_empty_title), // Reusing for now
-                            message = stringResource(R.string.notices_empty_body), // Reusing for now
-                        )
-                    } else {
-                        // For now, we'll show all menu items without category filtering
-                        // TODO: Implement proper category filtering when we have separate flows
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(state.menuItems, key = { it.id }) { item ->
-                                // Simple menu item card for now
-                                Surface(
-                                    shape = MaterialTheme.shapes.medium,
-                                    color = MaterialTheme.colorScheme.surface,
-                                    tonalElevation = 1.dp,
-                                    onClick = { onItemClick(item.id) },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
+                                    // Image placeholder
+                                    Surface(
+                                        shape = MaterialTheme.shapes.small,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier
+                                            .size(60.dp),
                                     ) {
-                                        // Image placeholder
-                                        Surface(
-                                            shape = MaterialTheme.shapes.small,
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            modifier = Modifier
-                                                .size(60.dp),
+                                        Icon(
+                                            imageVector = Icons.Outlined.Restaurant,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = item.name,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = item.description ?: "",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 2,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.End,
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.Restaurant,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.size(24.dp),
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = item.name,
-                                                style = MaterialTheme.typography.titleSmall,
+                                                text = item.formattedPrice(),
+                                                style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.onSurface,
-                                                maxLines = 1,
-                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                             )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = item.description ?: "",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                maxLines = 2,
-                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.End,
-                                            ) {
-                                                Text(
-                                                    text = "₹${item.priceInr.toString().padStart(4, '0')}",
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                )
-                                            }
                                         }
                                     }
                                 }

@@ -5,11 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.gumlapolytechnic.gpconnect.data.model.CanteenCategory
 import com.gumlapolytechnic.gpconnect.data.model.CanteenMenuItem
 import com.gumlapolytechnic.gpconnect.data.repository.CanteenRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 /**
  * ViewModel for the Canteen catalog screens.
@@ -27,16 +31,34 @@ class CanteenViewModel(
         val selectedCategoryId: String? = null,
     )
 
+    private val _selectedCategoryId = MutableStateFlow<String?>(null)
+
+    private val categoriesFlow = canteenRepository.observeCategories()
+        .onEach { }
+        .catch { e ->
+            // Error is handled in the combined state
+        }
+
+    private val menuItemsFlow = _selectedCategoryId.flatMapLatest { categoryId: String? ->
+        when (categoryId) {
+            null -> canteenRepository.observeAvailableMenuItems()
+            else -> canteenRepository.observeAvailableMenuItemsByCategory(categoryId)
+        }
+    }.onEach { }
+    .catch { e ->
+        // Error is handled in the combined state
+    }
+
     val uiState: StateFlow<CanteenUiState> = combine(
-        canteenRepository.observeCategories(),
-        canteenRepository.observeAvailableMenuItems(),
-    ) { categories, menuItems ->
+        categoriesFlow,
+        menuItemsFlow,
+    ) { categories: List<CanteenCategory>, menuItems: List<CanteenMenuItem> ->
         CanteenUiState(
             isLoading = false,
-            isError = false,
+            isError = categories.isEmpty() && menuItems.isEmpty(),
             categories = categories,
             menuItems = menuItems,
-            selectedCategoryId = null,
+            selectedCategoryId = _selectedCategoryId.value,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -45,21 +67,6 @@ class CanteenViewModel(
     )
 
     fun selectCategory(categoryId: String?) {
-        viewModelScope.launch {
-            val currentState = uiState.value
-            when (categoryId) {
-                null -> {
-                    // Show all menu items when no category selected
-                    // We'll need to re-fetch menu items for all categories
-                    // For now, we'll just update the selectedCategoryId and rely on UI to filter
-                    // TODO: Better approach would be to have separate flows for all vs category-specific
-                }
-                else -> {
-                    // Show menu items for selected category
-                    // We'll need to fetch category-specific items
-                    // TODO: Implement category-specific menu fetching
-                }
-            }
-        }
+        _selectedCategoryId.value = categoryId
     }
 }

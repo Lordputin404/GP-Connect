@@ -289,10 +289,15 @@ private fun QuickAccessGrid(
         rows.forEach { rowFeatures ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 rowFeatures.forEach { feature ->
+                    val onClick = if (feature == CampusFeature.CANTEEN) {
+                        onCanteenClick
+                    } else {
+                        { onFeatureClick(feature) }
+                    }
                     QuickAccessTile(
                         label = stringResource(feature.titleRes),
                         icon = feature.icon,
-                        onClick = { onFeatureClick(feature) },
+                        onClick = onClick,
                         modifier = Modifier.weight(1f),
                     )
                 }

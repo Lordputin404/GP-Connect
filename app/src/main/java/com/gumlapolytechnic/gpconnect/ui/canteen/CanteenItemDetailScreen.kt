@@ -14,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,13 +48,19 @@ fun CanteenItemDetailScreen(
     itemId: String,
     onBack: () -> Unit,
 ) {
-    // TODO: Implement proper item detail screen
-    // For now, we'll show a placeholder
-    
+    val app = LocalContext.current.applicationContext as GPConnectApplication
+    val viewModel: CanteenViewModel = viewModel {
+        CanteenViewModel(app.container.canteenRepository)
+    }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Find the item in the catalog state
+    val item = state.menuItems.firstOrNull { it.id == itemId }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.tab_canteen)) },
+                title = { Text(stringResource(R.string.canteen_item_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -71,23 +79,143 @@ fun CanteenItemDetailScreen(
             verticalArrangement = Arrangement.Top,
         ) {
             Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Item Detail Screen",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Item ID: $itemId",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Add to Cart functionality coming in Phase 8E",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+
+            when {
+                state.isLoading -> {
+                    // Show loading shimmer using existing component
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        repeat(3) {
+                            NoticeCardShimmer()
+                        }
+                    }
+                }
+                state.isError -> {
+                    ErrorState(
+                        message = stringResource(R.string.canteen_error_body),
+                        onRetry = { /* Repository will retry on re-subscription */ },
+                    )
+                }
+                item == null -> {
+                    // Item not found
+                    EmptyState(
+                        title = stringResource(R.string.canteen_item_not_found_title),
+                        message = stringResource(R.string.canteen_item_not_found_body),
+                    )
+                }
+                else -> {
+                    // Display the item details
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        // Item image placeholder
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Restaurant,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(64.dp),
+                                )
+                            }
+                        }
+
+                        // Item details
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = item.name,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = item.formattedPrice(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                Surface(
+                                    shape = MaterialTheme.shapes.small,
+                                    color = if (item.isAvailable) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
+                                ) {
+                                    Text(
+                                        text = if (item.isAvailable) stringResource(R.string.canteen_item_available) else stringResource(R.string.canteen_item_unavailable),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (item.isAvailable) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = item.description ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Divider()
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Add to Cart placeholder
+                            Surface(
+                                shape = MaterialTheme.shapes.medium,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = stringResource(R.string.canteen_add_to_cart_coming_soon),
+                                                style = MaterialTheme.typography.titleSmall,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.canteen_phase_8e_placeholder),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Outlined.Restaurant,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
