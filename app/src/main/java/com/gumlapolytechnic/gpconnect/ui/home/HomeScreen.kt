@@ -62,6 +62,7 @@ fun HomeScreen(
     onNoticeClick: (String) -> Unit,
     onViewAllNotices: () -> Unit,
     onFeatureClick: (CampusFeature) -> Unit,
+    onCanteenClick: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: HomeViewModel = viewModel {
@@ -133,7 +134,7 @@ fun HomeScreen(
         } else if (state.isError) {
             ErrorState(message = stringResource(R.string.home_error_body))
         } else {
-            HomeSections(state = state, onNoticeClick = onNoticeClick, onViewAllNotices = onViewAllNotices, onFeatureClick = onFeatureClick)
+            HomeSections(state = state, onNoticeClick = onNoticeClick, onViewAllNotices = onViewAllNotices, onFeatureClick = onFeatureClick, onCanteenClick = onCanteenClick)
         }
         Spacer(modifier = Modifier.height(24.dp))
     }
@@ -163,6 +164,7 @@ private fun HomeSections(
     onNoticeClick: (String) -> Unit,
     onViewAllNotices: () -> Unit,
     onFeatureClick: (CampusFeature) -> Unit,
+    onCanteenClick: () -> Unit,
 ) {
     // --- Important notices ------------------------------------------------
     SectionHeader(
@@ -198,7 +200,7 @@ private fun HomeSections(
     // --- Quick access ------------------------------------------------------
     Spacer(modifier = Modifier.height(24.dp))
     SectionHeader(title = stringResource(R.string.section_quick_access))
-    QuickAccessGrid(onFeatureClick = onFeatureClick)
+    QuickAccessGrid(onFeatureClick = onFeatureClick, onCanteenClick = onCanteenClick)
 
     // --- Recent notices ----------------------------------------------------
     Spacer(modifier = Modifier.height(24.dp))
@@ -278,7 +280,10 @@ private fun EventPreviewCard(event: CampusEventPreview) {
 }
 
 @Composable
-private fun QuickAccessGrid(onFeatureClick: (CampusFeature) -> Unit) {
+private fun QuickAccessGrid(
+    onFeatureClick: (CampusFeature) -> Unit,
+    onCanteenClick: () -> Unit,
+) {
     val rows = CampusFeature.entries.chunked(QUICK_ACCESS_COLUMNS)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         rows.forEach { rowFeatures ->

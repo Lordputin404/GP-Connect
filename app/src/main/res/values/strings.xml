@@ -99,6 +99,7 @@
     <string name="tab_home">Home</string>
     <string name="tab_notices">Notices</string>
     <string name="tab_calendar">Calendar</string>
+    <string name="tab_canteen">Canteen</string>
     <string name="tab_profile">Profile</string>
 
     <!-- Home dashboard -->

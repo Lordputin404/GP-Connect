@@ -6,10 +6,12 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -29,6 +31,8 @@ import androidx.navigation.compose.rememberNavController
 import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenItemDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticeDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticesScreen
@@ -41,15 +45,19 @@ object Routes {
     const val HOME = "home"
     const val NOTICES = "notices"
     const val CALENDAR = "calendar"
+    const val CANTEEN = "canteen"
+    const val CANTEEN_ITEM = "canteen/item/{itemId}"
     const val PROFILE = "profile"
 
     const val NOTICE_DETAIL = "notice/{noticeId}"
     const val NOTICE_DETAIL_ARG = "noticeId"
     const val FEATURE_PLACEHOLDER = "feature/{feature}"
     const val FEATURE_ARG = "feature"
+    const val CANTEEN_ITEM_ARG = "itemId"
 
     fun noticeDetail(noticeId: String) = "notice/$noticeId"
     fun featurePlaceholder(feature: CampusFeature) = "feature/${feature.routeArg}"
+    fun canteenItem(itemId: String) = "canteen/item/$itemId"
 }
 
 private enum class TopLevelDestination(
@@ -61,6 +69,7 @@ private enum class TopLevelDestination(
     HOME(Routes.HOME, R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
     NOTICES(Routes.NOTICES, R.string.tab_notices, Icons.Filled.Notifications, Icons.Outlined.Notifications),
     CALENDAR(Routes.CALENDAR, R.string.tab_calendar, Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth),
+    CANTEEN(Routes.CANTEEN, R.string.tab_canteen, Icons.Filled.Restaurant, Icons.Outlined.Restaurant),
     PROFILE(Routes.PROFILE, R.string.tab_profile, Icons.Filled.Person, Icons.Outlined.Person),
 }
 
@@ -107,7 +116,7 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
             startDestination = Routes.HOME,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Routes.HOME) {
+composable(Routes.HOME) {
                 HomeScreen(
                     user = user,
                     onNoticeClick = { id -> navController.navigate(Routes.noticeDetail(id)) },
@@ -115,7 +124,22 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     onFeatureClick = { feature ->
                         navController.navigate(Routes.featurePlaceholder(feature))
                     },
+                    onCanteenClick = { navController.navigateTopLevel(Routes.CANTEEN) },
                 )
+            }
+            composable(Routes.CANTEEN) {
+                CanteenScreen(onItemClick = { itemId ->
+                    navController.navigate("canteen/item/$itemId")
+                })
+            }
+            composable(Routes.CANTEEN_ITEM) { entry ->
+                val itemId = entry.arguments?.getString(Routes.CANTEEN_ITEM_ARG)
+                if (itemId != null) {
+                    CanteenItemDetailScreen(
+                        itemId = itemId,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
             composable(Routes.NOTICES) {
                 NoticesScreen(
