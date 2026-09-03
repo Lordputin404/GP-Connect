@@ -180,7 +180,7 @@
     <string name="action_create_account">Create account</string>
     <string name="signup_title">Create Account</string>
     <string name="signup_intro">Submit a signup request to your department HOD. You will be notified once it is reviewed.</string>
-    <string name="signup_hod_intro">HOD requests are reviewed by the college Super Admin, who confirms the department you will head.</string>
+    <string name="signup_hod_intro">Submit a signup request to the college Super Admin. You will be notified once it is reviewed.</string>
     <string name="signup_field_role">I am a</string>
     <string name="signup_field_name">Full name</string>
     <string name="signup_field_confirm_password">Confirm password</string>
@@ -200,6 +200,7 @@
     <string name="signup_submitting">Submitting…</string>
     <string name="signup_success_title">Request submitted</string>
     <string name="signup_success_body">Your signup request has been sent to your department HOD. You will be able to log in once it is approved.</string>
+    <string name="signup_success_body_hod">Your HOD signup request has been sent to the college Super Admin. You will be able to log in once it is approved.</string>
     <string name="signup_back_to_login">Back to login</string>
     <string name="signup_error_email_in_use">An account with this email already exists.</string>
     <string name="signup_error_rejected">Your signup request was rejected. Contact your department HOD.</string>
