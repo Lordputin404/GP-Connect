@@ -66,6 +66,18 @@ class FirebaseAuthRepository : AuthRepository {
     @Volatile
     private var resendInProgress = false
 
+    /**
+     * Set for the duration of [login] only. The sign-in inside fires the auth
+     * state listener immediately, and its not-enabled branch would sign a
+     * pending-approval user out mid-login — before the caller's own signup
+     * request can be read for the pending/disabled distinction — so the
+     * listener is muted while login resolves. login() itself signs out on
+     * every failure path and publishes the session on success, so the
+     * listener has nothing to do meanwhile.
+     */
+    @Volatile
+    private var loginInProgress = false
+
     init {
         // Restores a persisted Firebase session at app start (and observes
         // sign-out). Profile problems end the session rather than guessing a
@@ -84,6 +96,14 @@ class FirebaseAuthRepository : AuthRepository {
                 // straight back out itself; a transient unverified session must
                 // never be resolved here.
                 Log.i(TAG, "Auth state change ignored — verification resend in progress")
+                return@addAuthStateListener
+            }
+            if (loginInProgress) {
+                // login() resolves the freshly signed-in user itself — including
+                // the pending-approval / disabled distinction that needs a live
+                // request.auth to read its own signup request. Muting here keeps
+                // the mid-login sign-out from racing that read.
+                Log.i(TAG, "Auth state change ignored — login in progress")
                 return@addAuthStateListener
             }
             val firebaseUser = firebaseAuth.currentUser
@@ -150,124 +170,131 @@ class FirebaseAuthRepository : AuthRepository {
         password: String,
         expectation: LoginExpectation,
     ): LoginResult {
-        val result = try {
-            auth.signInWithEmailAndPassword(email.trim(), password).awaitTask()
-        } catch (e: FirebaseAuthException) {
-            Log.e(
-                TAG,
-                "signInWithEmailAndPassword failed: code=${e.errorCode} " +
-                    "exception=${e.javaClass.simpleName} message=${e.message}",
-                e,
-            )
-            return mapAuthError(e)
-        } catch (e: Exception) {
-            Log.e(
-                TAG,
-                "signInWithEmailAndPassword failed (non-Auth exception): " +
-                    "${e.javaClass.simpleName}: ${e.message}",
-                e,
-            )
-            return mapUnknownError(e)
-        }
-        val firebaseUser = result.user
-        if (firebaseUser == null) {
-            Log.e(TAG, "signInWithEmailAndPassword returned no user")
-            return LoginResult.InvalidCredentials
-        }
-        Log.i(TAG, "Firebase authentication succeeded: uid=${firebaseUser.uid}")
+        loginInProgress = true
+        try {
+            val result = try {
+                auth.signInWithEmailAndPassword(email.trim(), password).awaitTask()
+            } catch (e: FirebaseAuthException) {
+                Log.e(
+                    TAG,
+                    "signInWithEmailAndPassword failed: code=${e.errorCode} " +
+                        "exception=${e.javaClass.simpleName} message=${e.message}",
+                    e,
+                )
+                return mapAuthError(e)
+            } catch (e: Exception) {
+                Log.e(
+                    TAG,
+                    "signInWithEmailAndPassword failed (non-Auth exception): " +
+                        "${e.javaClass.simpleName}: ${e.message}",
+                    e,
+                )
+                return mapUnknownError(e)
+            }
+            val firebaseUser = result.user
+            if (firebaseUser == null) {
+                Log.e(TAG, "signInWithEmailAndPassword returned no user")
+                return LoginResult.InvalidCredentials
+            }
+            Log.i(TAG, "Firebase authentication succeeded: uid=${firebaseUser.uid}")
 
-        val profile = try {
-            fetchProfile(firebaseUser.uid)
-        } catch (e: FirebaseFirestoreException) {
-            Log.e(
-                TAG,
-                "Profile fetch failed (Firestore): code=${e.code} " +
-                    "exception=${e.javaClass.simpleName} message=${e.message}",
-                e,
-            )
-            auth.signOut()
-            return mapFirestoreError(e)
-        } catch (e: Exception) {
-            Log.e(
-                TAG,
-                "Profile fetch failed: ${e.javaClass.simpleName}: ${e.message}",
-                e,
-            )
-            auth.signOut()
-            return mapUnknownError(e)
-        }
+            val profile = try {
+                fetchProfile(firebaseUser.uid)
+            } catch (e: FirebaseFirestoreException) {
+                Log.e(
+                    TAG,
+                    "Profile fetch failed (Firestore): code=${e.code} " +
+                        "exception=${e.javaClass.simpleName} message=${e.message}",
+                    e,
+                )
+                auth.signOut()
+                return mapFirestoreError(e)
+            } catch (e: Exception) {
+                Log.e(
+                    TAG,
+                    "Profile fetch failed: ${e.javaClass.simpleName}: ${e.message}",
+                    e,
+                )
+                auth.signOut()
+                return mapUnknownError(e)
+            }
 
-        if (profile == null) {
-            Log.w(TAG, "Profile users/${firebaseUser.uid} does not exist — not configured")
-            auth.signOut()
-            return LoginResult.AccountNotConfigured
-        }
+            if (profile == null) {
+                Log.w(TAG, "Profile users/${firebaseUser.uid} does not exist — not configured")
+                auth.signOut()
+                return LoginResult.AccountNotConfigured
+            }
 
-        // The user may have verified their email from a link moments ago; the
-        // cached Firebase user can still hold the pre-verification state.
-        // Reload refreshes it from the server before isEmailVerified is read.
-        // A reload failure (e.g. offline) is not fatal: the fresh sign-in token
-        // above already carries an accurate verification state.
-        runCatching { firebaseUser.reload().awaitTask() }
-            .onFailure { failure ->
+            // The user may have verified their email from a link moments ago; the
+            // cached Firebase user can still hold the pre-verification state.
+            // Reload refreshes it from the server before isEmailVerified is read.
+            // A reload failure (e.g. offline) is not fatal: the fresh sign-in token
+            // above already carries an accurate verification state.
+            runCatching { firebaseUser.reload().awaitTask() }
+                .onFailure { failure ->
+                    Log.w(
+                        TAG,
+                        "reload() failed before verification check: " +
+                            "${failure.javaClass.simpleName}: ${failure.message}",
+                    )
+                }
+
+            // Email verification is an independent gate: an approved and enabled
+            // profile is still unusable until the Firebase email is verified.
+            // Checked from the freshly signed-in Firebase user (the token cache
+            // may be stale after verifying from a web link). This branch stays
+            // FIRST: a not-yet-approved applicant whose email is also unverified
+            // must be told to verify, not that their account is disabled/pending.
+            if (!firebaseUser.isEmailVerified) {
+                Log.w(TAG, "Email not verified for uid=${profile.id}")
+                auth.signOut()
+                return LoginResult.EmailNotVerified
+            }
+
+            if (!profile.enabled) {
+                // A signup account starts disabled. That is "pending approval" —
+                // not genuinely disabled — when its own signup request is still
+                // PENDING. The rules allow the caller to read its own request
+                // document, so the distinction is made here, not in the UI. The
+                // requestedRole distinguishes a HOD applicant (Super Admin decides)
+                // from a member applicant (department HOD decides); the profile's
+                // own role is always STUDENT until the decision lands.
+                val pendingRole = pendingSignupRequestedRole(firebaseUser.uid)
+                val result = when (pendingRole) {
+                    UserRole.FACULTY_ADMIN.name -> LoginResult.HodAccountPendingApproval
+                    null -> LoginResult.AccountDisabled
+                    else -> LoginResult.AccountPendingApproval
+                }
                 Log.w(
                     TAG,
-                    "reload() failed before verification check: " +
-                        "${failure.javaClass.simpleName}: ${failure.message}",
+                    "Profile not enabled for uid=${profile.id} — " +
+                        "pending signup requestedRole: $pendingRole",
                 )
-            }
-
-        // Email verification is an independent gate: an approved and enabled
-        // profile is still unusable until the Firebase email is verified.
-        // Checked from the freshly signed-in Firebase user (the token cache
-        // may be stale after verifying from a web link). This branch stays
-        // FIRST: a not-yet-approved applicant whose email is also unverified
-        // must be told to verify, not that their account is disabled/pending.
-        if (!firebaseUser.isEmailVerified) {
-            Log.w(TAG, "Email not verified for uid=${profile.id}")
-            auth.signOut()
-            return LoginResult.EmailNotVerified
-        }
-
-        if (!profile.enabled) {
-            // A signup account starts disabled. That is "pending approval" —
-            // not genuinely disabled — when its own signup request is still
-            // PENDING. The rules allow the caller to read its own request
-            // document, so the distinction is made here, not in the UI. The
-            // requestedRole distinguishes a HOD applicant (Super Admin decides)
-            // from a member applicant (department HOD decides); the profile's
-            // own role is always STUDENT until the decision lands.
-            val pendingRole = pendingSignupRequestedRole(firebaseUser.uid)
-            val result = when (pendingRole) {
-                UserRole.FACULTY_ADMIN.name -> LoginResult.HodAccountPendingApproval
-                null -> LoginResult.AccountDisabled
-                else -> LoginResult.AccountPendingApproval
-            }
-            Log.w(
-                TAG,
-                "Profile not enabled for uid=${profile.id} — " +
-                    "pending signup requestedRole: $pendingRole",
-            )
-            auth.signOut()
-            return result
-        }
-
-        return when {
-            expectation == LoginExpectation.MEMBER && profile.role.isAdmin -> {
-                Log.w(TAG, "Role mismatch: expected a student/teacher account, got ${profile.role}")
                 auth.signOut()
-                LoginResult.WrongRole
+                return result
             }
-            expectation == LoginExpectation.ADMIN && !profile.role.isAdmin -> {
-                Log.w(TAG, "Role mismatch: expected an admin role, got ${profile.role}")
-                auth.signOut()
-                LoginResult.WrongRole
+
+            return when {
+                expectation == LoginExpectation.MEMBER && profile.role.isAdmin -> {
+                    Log.w(TAG, "Role mismatch: expected a student/teacher account, got ${profile.role}")
+                    auth.signOut()
+                    LoginResult.WrongRole
+                }
+                expectation == LoginExpectation.ADMIN && !profile.role.isAdmin -> {
+                    Log.w(TAG, "Role mismatch: expected an admin role, got ${profile.role}")
+                    auth.signOut()
+                    LoginResult.WrongRole
+                }
+                else -> {
+                    Log.i(TAG, "Login resolved: uid=${profile.id} role=${profile.role} module=${profile.module}")
+                    _session.value = profile
+                    LoginResult.Success
+                }
             }
-            else -> {
-                Log.i(TAG, "Login resolved: uid=${profile.id} role=${profile.role} module=${profile.module}")
-                _session.value = profile
-                LoginResult.Success
-            }
+        } finally {
+            // Cleared on every exit path (all returns are inside this try): a
+            // stuck-true flag would permanently mute session restore below.
+            loginInProgress = false
         }
     }
 
