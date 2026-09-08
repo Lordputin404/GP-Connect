@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
     implementation(libs.firebase.functions)
+    implementation(libs.coil)
 
     debugImplementation(libs.androidx.ui.tooling)
 }
