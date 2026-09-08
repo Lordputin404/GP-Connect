@@ -106,6 +106,7 @@
     <string name="tab_home">Home</string>
     <string name="tab_notices">Notices</string>
     <string name="tab_calendar">Calendar</string>
+    <string name="tab_canteen">Canteen</string>
     <string name="tab_profile">Profile</string>
 
     <!-- Home dashboard -->
@@ -160,6 +161,94 @@
     <string name="feature_canteen_title">Canteen</string>
     <string name="feature_canteen_description">Menus, timings and daily specials from the campus canteen.</string>
     <string name="feature_departments_title">Departments</string>
+
+    <!-- Canteen (student catalog) -->
+    <string name="canteen_title">Canteen</string>
+    <string name="canteen_section_categories">Categories</string>
+    <string name="canteen_section_menu">Menu</string>
+    <string name="canteen_category_all">All</string>
+    <string name="canteen_empty_categories_title">No categories available</string>
+    <string name="canteen_empty_categories_body">No enabled categories found.</string>
+    <string name="canteen_empty_menu_title">No items available</string>
+    <string name="canteen_empty_menu_body">No available menu items in this category.</string>
+    <string name="canteen_item_unavailable">Item unavailable</string>
+    <string name="canteen_item_not_found_title">Item not found</string>
+    <string name="canteen_item_not_found_body">This menu item may have been removed.</string>
+    <string name="canteen_error_body">Could not load canteen data. Check your connection and try again.</string>
+    <string name="canteen_item_detail_title">Item Details</string>
+    <string name="canteen_add_to_cart_coming_soon">Add to Cart — coming in Phase 8E</string>
+    <string name="canteen_item_available">Available</string>
+    <string name="canteen_phase_8e_placeholder">Cart functionality coming in Phase 8E</string>
+    <string name="canteen_add_to_cart">Add to Cart</string>
+    <string name="canteen_cart_cd">Open cart</string>
+    <string name="canteen_cart_title">Your Cart</string>
+    <string name="canteen_cart_empty_title">Your cart is empty</string>
+    <string name="canteen_cart_empty_body">Add items from the canteen menu to get started.</string>
+    <string name="canteen_cart_increment_cd">Increase quantity</string>
+    <string name="canteen_cart_decrement_cd">Decrease quantity</string>
+    <string name="canteen_cart_remove">Remove</string>
+    <string name="canteen_cart_items_format">Items: %1$d</string>
+    <string name="canteen_cart_quantity_format">Qty: %1$d</string>
+    <string name="canteen_cart_subtotal">Subtotal</string>
+    <string name="canteen_cart_subtotal_disclaimer">Display only. Final price is set at checkout.</string>
+    <string name="canteen_in_cart_format">In cart: %1$d</string>
+
+    <!-- Canteen Checkout -->
+    <string name="canteen_checkout_title">Checkout</string>
+    <string name="canteen_checkout_empty_title">Nothing to checkout</string>
+    <string name="canteen_checkout_empty_body">Your cart is empty. Add items first.</string>
+    <string name="canteen_checkout_placing">Placing your order…</string>
+    <string name="canteen_checkout_retry">Retry</string>
+    <string name="canteen_checkout_back_to_cart">Back to Cart</string>
+    <string name="canteen_checkout_place_order">Place Order</string>
+    <string name="canteen_checkout_display_only_disclaimer">Display only. Final price is set at checkout.</string>
+    <string name="canteen_checkout_items_format">Items: %1$d</string>
+    <string name="canteen_checkout_quantity_format">Qty: %1$d</string>
+    <string name="canteen_checkout_subtotal">Subtotal</string>
+    <string name="canteen_cart_proceed_checkout">Proceed to Checkout</string>
+
+    <!-- Canteen Orders -->
+    <string name="canteen_orders_title">My Orders</string>
+    <string name="canteen_orders_cd">Open my orders</string>
+    <string name="canteen_orders_empty_title">No orders yet</string>
+    <string name="canteen_orders_empty_body">Once you place a canteen order it will appear here.</string>
+    <string name="canteen_orders_error_body">Could not load your orders. Check your connection and try again.</string>
+    <string name="canteen_orders_section_active">Active</string>
+    <string name="canteen_orders_section_history">History</string>
+    <string name="canteen_order_detail_title">Order Details</string>
+    <string name="canteen_order_detail_items">Items</string>
+    <string name="canteen_order_detail_total">Total</string>
+    <string name="canteen_order_detail_created_format">Placed %1$s</string>
+    <string name="canteen_order_detail_updated_format">Updated %1$s</string>
+    <string name="canteen_order_detail_not_found_title">Order not found</string>
+    <string name="canteen_order_detail_not_found_body">This order may have been removed.</string>
+    <string name="canteen_order_detail_cancel_title">Cancel order</string>
+    <string name="canteen_order_detail_cancel_button">Cancel Order</string>
+    <string name="canteen_order_detail_cancel_reason_label">Reason (optional)</string>
+    <string name="canteen_order_detail_cancel_dialog_title">Cancel this order?</string>
+    <string name="canteen_order_detail_cancel_dialog_body">This cannot be undone. The order will be marked as cancelled.</string>
+    <string name="canteen_order_detail_cancel_dialog_confirm">Cancel order</string>
+    <string name="canteen_order_detail_cancel_dialog_dismiss">Keep order</string>
+    <string name="canteen_order_detail_cancel_in_progress">Cancelling…</string>
+    <string name="canteen_order_detail_cancel_success">Order cancelled</string>
+    <string name="canteen_order_detail_cancel_error">Could not cancel the order. Please try again.</string>
+    <string name="canteen_order_detail_cancellation_reason_format">Cancellation reason: %1$s</string>
+    <string name="canteen_order_detail_status_format">Status: %1$s</string>
+    <string name="canteen_order_detail_quantity_format">Qty: %1$d</string>
+    <string name="canteen_order_detail_unit_price_format">%1$s each</string>
+    <string name="canteen_order_status_pending">Pending</string>
+    <string name="canteen_order_status_confirmed">Confirmed</string>
+    <string name="canteen_order_status_preparing">Preparing</string>
+    <string name="canteen_order_status_ready">Ready for pickup</string>
+    <string name="canteen_order_status_completed">Completed</string>
+    <string name="canteen_order_status_cancelled">Cancelled</string>
+
+    <!-- Canteen Checkout Success -->
+    <string name="canteen_checkout_success_title">Order Placed</string>
+    <string name="canteen_checkout_success_message">Your order has been successfully placed.</string>
+    <string name="canteen_checkout_order_id_format">Order ID: %1$s</string>
+    <string name="canteen_checkout_back_to_canteen">Back to Canteen</string>
+
     <string name="feature_departments_description">Explore departments, courses and their activities.</string>
     <string name="feature_faculty_title">Faculty</string>
     <string name="feature_faculty_description">Faculty members, subjects and office hours.</string>

@@ -1,6 +1,7 @@
 package com.gumlapolytechnic.gpconnect.data.firebase
 
 import com.google.android.gms.tasks.Task
+import com.google.firebase.functions.HttpsCallableResult
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -23,6 +24,20 @@ internal suspend fun <T> Task<T>.awaitTask(): T = suspendCancellableCoroutine { 
         } else {
             val cause = task.exception ?: RuntimeException("Firebase task failed without an exception")
             android.util.Log.w("GPTaskAwait", "Task failed: ${cause.javaClass.simpleName}: ${cause.message}")
+            continuation.resumeWithException(cause)
+        }
+    }
+}
+
+/**
+ * Suspends until the Callable Function [Task] of [HttpsCallableResult] completes.
+ */
+internal suspend fun Task<HttpsCallableResult>.awaitResult(): HttpsCallableResult = suspendCancellableCoroutine { continuation ->
+    addOnCompleteListener { task ->
+        if (task.isSuccessful) {
+            continuation.resume(task.result)
+        } else {
+            val cause = task.exception ?: RuntimeException("Callable task failed")
             continuation.resumeWithException(cause)
         }
     }

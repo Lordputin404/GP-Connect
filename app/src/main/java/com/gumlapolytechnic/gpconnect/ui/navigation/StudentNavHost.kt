@@ -6,10 +6,12 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -29,7 +31,14 @@ import androidx.navigation.compose.rememberNavController
 import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenCartScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenCheckoutScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenOrderDetailScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenOrderHistoryScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenItemDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
+import com.gumlapolytechnic.gpconnect.ui.login.SessionViewModel
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticeDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticesScreen
 import com.gumlapolytechnic.gpconnect.ui.placeholder.CampusFeature
@@ -41,15 +50,25 @@ object Routes {
     const val HOME = "home"
     const val NOTICES = "notices"
     const val CALENDAR = "calendar"
+    const val CANTEEN = "canteen"
+    const val CANTEEN_ITEM = "canteen/item/{itemId}"
+    const val CANTEEN_CART = "canteen/cart"
+    const val CANTEEN_CHECKOUT = "canteen/checkout"
+    const val CANTEEN_ORDERS = "canteen/orders"
+    const val CANTEEN_ORDER = "canteen/order/{orderId}"
     const val PROFILE = "profile"
 
     const val NOTICE_DETAIL = "notice/{noticeId}"
     const val NOTICE_DETAIL_ARG = "noticeId"
     const val FEATURE_PLACEHOLDER = "feature/{feature}"
     const val FEATURE_ARG = "feature"
+    const val CANTEEN_ITEM_ARG = "itemId"
+    const val CANTEEN_ORDER_ARG = "orderId"
 
     fun noticeDetail(noticeId: String) = "notice/$noticeId"
     fun featurePlaceholder(feature: CampusFeature) = "feature/${feature.routeArg}"
+    fun canteenItem(itemId: String) = "canteen/item/$itemId"
+    fun canteenOrder(orderId: String) = "canteen/order/$orderId"
 }
 
 private enum class TopLevelDestination(
@@ -61,20 +80,25 @@ private enum class TopLevelDestination(
     HOME(Routes.HOME, R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
     NOTICES(Routes.NOTICES, R.string.tab_notices, Icons.Filled.Notifications, Icons.Outlined.Notifications),
     CALENDAR(Routes.CALENDAR, R.string.tab_calendar, Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth),
+    CANTEEN(Routes.CANTEEN, R.string.tab_canteen, Icons.Filled.Restaurant, Icons.Outlined.Restaurant),
     PROFILE(Routes.PROFILE, R.string.tab_profile, Icons.Filled.Person, Icons.Outlined.Person),
 }
 
 private val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
 
 /**
- * Student app shell. Bottom navigation covers the four top-level
+ * Student app shell. Bottom navigation covers the five top-level
  * destinations; notice detail and feature placeholders open as ordinary
  * destinations above them (bottom bar hidden) with normal back behavior.
  * Tab taps use launchSingleTop + saveState/restoreState so repeated taps
  * never stack duplicate destinations and each tab keeps its own state.
  */
 @Composable
-fun StudentApp(user: User, onLogout: () -> Unit) {
+fun StudentApp(
+    user: User,
+    onLogout: () -> Unit,
+    sessionViewModel: SessionViewModel,
+) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -107,7 +131,7 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
             startDestination = Routes.HOME,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Routes.HOME) {
+composable(Routes.HOME) {
                 HomeScreen(
                     user = user,
                     onNoticeClick = { id -> navController.navigate(Routes.noticeDetail(id)) },
@@ -115,7 +139,61 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     onFeatureClick = { feature ->
                         navController.navigate(Routes.featurePlaceholder(feature))
                     },
+                    onCanteenClick = { navController.navigateTopLevel(Routes.CANTEEN) },
                 )
+            }
+            composable(Routes.CANTEEN) {
+                CanteenScreen(
+                    onItemClick = { itemId ->
+                        navController.navigate(Routes.canteenItem(itemId))
+                    },
+                    onCartClick = { navController.navigate(Routes.CANTEEN_CART) },
+                    navController = navController,
+                )
+            }
+            composable(Routes.CANTEEN_ITEM) { entry ->
+                val itemId = entry.arguments?.getString(Routes.CANTEEN_ITEM_ARG)
+                if (itemId != null) {
+                    CanteenItemDetailScreen(
+                        itemId = itemId,
+                        onBack = { navController.popBackStack() },
+                        onCartClick = { navController.navigate(Routes.CANTEEN_CART) },
+                        sessionViewModel = sessionViewModel,
+                    )
+                }
+            }
+            composable(Routes.CANTEEN_CART) {
+                CanteenCartScreen(
+                    onBack = { navController.popBackStack() },
+                    onCheckoutClick = { navController.navigate(Routes.CANTEEN_CHECKOUT) },
+                    sessionViewModel = sessionViewModel,
+                )
+            }
+            composable(Routes.CANTEEN_CHECKOUT) {
+                CanteenCheckoutScreen(
+                    onBack = { navController.popBackStack() },
+                    onFinish = {
+                        navController.popBackStack(Routes.CANTEEN, inclusive = false)
+                    },
+                    sessionViewModel = sessionViewModel,
+                )
+            }
+            composable(Routes.CANTEEN_ORDERS) {
+                CanteenOrderHistoryScreen(
+                    onBack = { navController.popBackStack() },
+                    onOrderClick = { orderId ->
+                        navController.navigate(Routes.canteenOrder(orderId))
+                    },
+                )
+            }
+            composable(Routes.CANTEEN_ORDER) { entry ->
+                val orderId = entry.arguments?.getString(Routes.CANTEEN_ORDER_ARG)
+                if (orderId != null) {
+                    CanteenOrderDetailScreen(
+                        orderId = orderId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
             composable(Routes.NOTICES) {
                 NoticesScreen(

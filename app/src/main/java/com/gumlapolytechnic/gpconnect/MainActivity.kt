@@ -62,10 +62,11 @@ class MainActivity : ComponentActivity() {
                     when (state) {
                         SessionState.Checking -> CheckingSessionScreen()
                         SessionState.LoggedOut -> LoginNavHost()
-                        is SessionState.StudentActive -> StudentApp(
-                            user = state.user,
-                            onLogout = sessionViewModel::logout,
-                        )
+                    is SessionState.StudentActive -> StudentApp(
+                        user = state.user,
+                        onLogout = sessionViewModel::logout,
+                        sessionViewModel = sessionViewModel,
+                    )
                         is SessionState.AdminActive -> AdminApp(
                             user = state.user,
                             onLogout = sessionViewModel::logout,
