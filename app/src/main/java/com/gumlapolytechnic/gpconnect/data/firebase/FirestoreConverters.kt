@@ -3,6 +3,9 @@ package com.gumlapolytechnic.gpconnect.data.firebase
 import com.gumlapolytechnic.gpconnect.data.model.AdminModule
 import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
+import com.gumlapolytechnic.gpconnect.data.model.CalendarEvent
+import com.gumlapolytechnic.gpconnect.data.model.CalendarEventStatus
+import com.gumlapolytechnic.gpconnect.data.model.CalendarEventType
 import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
@@ -221,3 +224,60 @@ private fun Map<*, *>.stringOrNull(key: String): String? =
     (this[key] as? String)?.takeIf { it.isNotBlank() }
 
 private fun Map<*, *>.long(key: String): Long = this[key] as? Long ?: 0L
+
+// ---- calendarEvents -------------------------------------------------------
+
+internal fun DocumentSnapshot.toCalendarEvent(): CalendarEvent? {
+    val data = data ?: return null
+    return CalendarEvent(
+        id = id,
+        title = data.string("title"),
+        description = data.string("description"),
+        startDate = data.long("startDate"),
+        endDate = data.long("endDate"),
+        type = data.stringOrNull("type").toEventType(),
+        isAllDay = data["isAllDay"] as? Boolean ?: false,
+        status = data.stringOrNull("status").toEventStatus(),
+        isPublished = data["isPublished"] as? Boolean ?: false,
+        createdAt = data.long("createdAt"),
+        updatedAt = data.long("updatedAt"),
+    )
+}
+
+/**
+ * All fields written to `calendarEvents/{id}`. Dates are epoch-millisecond
+ * longs (matching the Notice pattern of long timestamps rather than Firestore
+ * Timestamp objects, so the model and rules stay type-checkable as ints).
+ * Enum names persisted verbatim, mirroring the other collections.
+ */
+internal fun calendarEventFields(
+    title: String,
+    description: String,
+    startDate: Long,
+    endDate: Long,
+    type: CalendarEventType,
+    isAllDay: Boolean,
+    status: CalendarEventStatus,
+    isPublished: Boolean,
+    createdAt: Long,
+    updatedAt: Long,
+): Map<String, Any?> = mapOf(
+    "title" to title,
+    "description" to description,
+    "startDate" to startDate,
+    "endDate" to endDate,
+    "type" to type.name,
+    "isAllDay" to isAllDay,
+    "status" to status.name,
+    "isPublished" to isPublished,
+    "createdAt" to createdAt,
+    "updatedAt" to updatedAt,
+)
+
+private fun String?.toEventType(): CalendarEventType =
+    runCatching { CalendarEventType.valueOf(this ?: "") }
+        .getOrDefault(CalendarEventType.ACTIVITY)
+
+private fun String?.toEventStatus(): CalendarEventStatus =
+    runCatching { CalendarEventStatus.valueOf(this ?: "") }
+        .getOrDefault(CalendarEventStatus.CONFIRMED)

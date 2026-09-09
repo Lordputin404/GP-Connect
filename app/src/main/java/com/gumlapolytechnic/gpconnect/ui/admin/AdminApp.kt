@@ -16,8 +16,13 @@ object AdminRoutes {
     const val ADMIN_MANAGEMENT = "admin-management"
     const val SIGNUP_REQUESTS = "admin-signup-requests"
     const val TEACHERS = "admin-teachers"
+    const val CALENDAR = "admin-calendar"
+    const val CALENDAR_CREATE = "admin-calendar-create"
+    const val CALENDAR_EDIT = "admin-calendar-edit/{eventId}"
+    const val CALENDAR_EDIT_ARG = "eventId"
 
     fun editNotice(noticeId: String) = "admin-edit/$noticeId"
+    fun editCalendarEvent(eventId: String) = "admin-calendar-edit/$eventId"
 }
 
 /**
@@ -49,6 +54,11 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                 onEditNotice = { id -> navController.navigate(AdminRoutes.editNotice(id)) },
                 onOpenAdminManagement = if (isSuperAdmin) {
                     { navController.navigate(AdminRoutes.ADMIN_MANAGEMENT) }
+                } else {
+                    null
+                },
+                onOpenCalendar = if (isSuperAdmin) {
+                    { navController.navigate(AdminRoutes.CALENDAR) }
                 } else {
                     null
                 },
@@ -88,6 +98,32 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                     currentUserId = user.id,
                     onBack = { navController.popBackStack() },
                 )
+            }
+        }
+        // College Calendar management is SUPER_ADMIN-only: the rules reject
+        // every calendarEvents write from any other role.
+        if (isSuperAdmin) {
+            composable(AdminRoutes.CALENDAR) {
+                AdminCalendarScreen(
+                    onAddEvent = { navController.navigate(AdminRoutes.CALENDAR_CREATE) },
+                    onEditEvent = { id -> navController.navigate(AdminRoutes.editCalendarEvent(id)) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(AdminRoutes.CALENDAR_CREATE) {
+                AdminCalendarEventFormScreen(
+                    editEventId = null,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(AdminRoutes.CALENDAR_EDIT) { entry ->
+                val eventId = entry.arguments?.getString(AdminRoutes.CALENDAR_EDIT_ARG)
+                if (eventId != null) {
+                    AdminCalendarEventFormScreen(
+                        editEventId = eventId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
         }
         // Signup approval: SUPER_ADMIN college-wide, HOD for their department.

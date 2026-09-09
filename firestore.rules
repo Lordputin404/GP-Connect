@@ -380,5 +380,74 @@ service cloud.firestore {
             && resource.data.module == moduleForRole(currentRole())
             && resource.data.ownerRole == currentRole());
     }
+
+    // ---- calendarEvents/{eventId} ------------------------------------------
+    // The College Calendar. Members (any enabled user) read *published*
+    // events only; the SUPER_ADMIN manages the collection (create/update/
+    // delete) and reads everything, including drafts. No department admin
+    // writes calendar events — the college calendar is college-wide.
+    match /calendarEvents/{eventId} {
+      // Reading is granted per document: an unpublished (draft) event is
+      // visible only to the super admin. A member query must therefore
+      // filter on isPublished == true — any other member query is rejected,
+      // which is exactly what the client's published-only listener does.
+      allow get, list: if isSuperAdmin() ||
+        (isEnabled() && resource.data.isPublished == true);
+
+      // Calendar management is SUPER_ADMIN-only. Field validation mirrors
+      // the other collections: title/description strings, date longs, enum
+      // names within their allow-lists, and a createdAt/updatedAt stamp.
+      allow create: if isSuperAdmin() &&
+        request.resource.data.keys().hasAll(
+          ['title', 'description', 'startDate', 'endDate', 'type', 'isAllDay',
+           'status', 'isPublished', 'createdAt', 'updatedAt']
+        ) &&
+        request.resource.data.keys().hasOnly(
+          ['title', 'description', 'startDate', 'endDate', 'type', 'isAllDay',
+           'status', 'isPublished', 'createdAt', 'updatedAt']
+        ) &&
+        isNonEmptyString(request.resource.data.title) &&
+        request.resource.data.description is string &&
+        request.resource.data.startDate is int &&
+        request.resource.data.endDate is int &&
+        request.resource.data.endDate >= request.resource.data.startDate &&
+        request.resource.data.type in ['EXAM', 'HOLIDAY', 'ACTIVITY', 'CO_CURRICULAR'] &&
+        request.resource.data.isAllDay is bool &&
+        request.resource.data.status in ['CONFIRMED', 'TENTATIVE'] &&
+        request.resource.data.isPublished is bool &&
+        request.resource.data.createdAt is int &&
+        request.resource.data.updatedAt is int;
+
+      // Full-event update (edit form). The same shape contract as create;
+      // updatedAt is refreshed so edits are always stamped.
+      allow update: if isSuperAdmin() &&
+        request.resource.data.keys().hasAll(
+          ['title', 'description', 'startDate', 'endDate', 'type', 'isAllDay',
+           'status', 'isPublished', 'createdAt', 'updatedAt']
+        ) &&
+        request.resource.data.keys().hasOnly(
+          ['title', 'description', 'startDate', 'endDate', 'type', 'isAllDay',
+           'status', 'isPublished', 'createdAt', 'updatedAt']
+        ) &&
+        isNonEmptyString(request.resource.data.title) &&
+        request.resource.data.description is string &&
+        request.resource.data.startDate is int &&
+        request.resource.data.endDate is int &&
+        request.resource.data.endDate >= request.resource.data.startDate &&
+        request.resource.data.type in ['EXAM', 'HOLIDAY', 'ACTIVITY', 'CO_CURRICULAR'] &&
+        request.resource.data.isAllDay is bool &&
+        request.resource.data.status in ['CONFIRMED', 'TENTATIVE'] &&
+        request.resource.data.isPublished is bool &&
+        request.resource.data.createdAt is int &&
+        request.resource.data.updatedAt is int;
+
+      // The publish/unpublish toggle from the management list: only the two
+      // fields may change.
+      allow update: if isSuperAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['isPublished', 'updatedAt']);
+
+      allow delete: if isSuperAdmin();
+    }
   }
 }

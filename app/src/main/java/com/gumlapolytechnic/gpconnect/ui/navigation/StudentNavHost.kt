@@ -28,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.User
+import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarEventDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticeDetailScreen
@@ -45,10 +46,13 @@ object Routes {
 
     const val NOTICE_DETAIL = "notice/{noticeId}"
     const val NOTICE_DETAIL_ARG = "noticeId"
+    const val EVENT_DETAIL = "event/{eventId}"
+    const val EVENT_DETAIL_ARG = "eventId"
     const val FEATURE_PLACEHOLDER = "feature/{feature}"
     const val FEATURE_ARG = "feature"
 
     fun noticeDetail(noticeId: String) = "notice/$noticeId"
+    fun eventDetail(eventId: String) = "event/$eventId"
     fun featurePlaceholder(feature: CampusFeature) = "feature/${feature.routeArg}"
 }
 
@@ -112,6 +116,8 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     user = user,
                     onNoticeClick = { id -> navController.navigate(Routes.noticeDetail(id)) },
                     onViewAllNotices = { navController.navigateTopLevel(Routes.NOTICES) },
+                    onViewAllEvents = { navController.navigateTopLevel(Routes.CALENDAR) },
+                    onEventClick = { id -> navController.navigate(Routes.eventDetail(id)) },
                     onFeatureClick = { feature ->
                         navController.navigate(Routes.featurePlaceholder(feature))
                     },
@@ -122,7 +128,11 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     onNoticeClick = { id -> navController.navigate(Routes.noticeDetail(id)) },
                 )
             }
-            composable(Routes.CALENDAR) { CalendarScreen() }
+            composable(Routes.CALENDAR) {
+                CalendarScreen(
+                    onEventClick = { id -> navController.navigate(Routes.eventDetail(id)) },
+                )
+            }
             composable(Routes.PROFILE) {
                 ProfileScreen(user = user, onLogout = onLogout)
             }
@@ -131,6 +141,15 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                 if (noticeId != null) {
                     NoticeDetailScreen(
                         noticeId = noticeId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+            }
+            composable(Routes.EVENT_DETAIL) { entry ->
+                val eventId = entry.arguments?.getString(Routes.EVENT_DETAIL_ARG)
+                if (eventId != null) {
+                    CalendarEventDetailScreen(
+                        eventId = eventId,
                         onBack = { navController.popBackStack() },
                     )
                 }

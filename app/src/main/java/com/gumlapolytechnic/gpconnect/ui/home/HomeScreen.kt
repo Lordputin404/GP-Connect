@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,17 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Construction
-import androidx.compose.material.icons.outlined.Domain
-import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.Groups
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Restaurant
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,8 +29,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
-import com.gumlapolytechnic.gpconnect.data.mock.CampusEventPreview
 import com.gumlapolytechnic.gpconnect.data.model.User
+import com.gumlapolytechnic.gpconnect.ui.components.CalendarEventCard
 import com.gumlapolytechnic.gpconnect.ui.components.ErrorState
 import com.gumlapolytechnic.gpconnect.ui.components.EventPreviewShimmer
 import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
@@ -61,11 +50,13 @@ fun HomeScreen(
     user: User,
     onNoticeClick: (String) -> Unit,
     onViewAllNotices: () -> Unit,
+    onViewAllEvents: () -> Unit,
+    onEventClick: (String) -> Unit,
     onFeatureClick: (CampusFeature) -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: HomeViewModel = viewModel {
-        HomeViewModel(app.container.noticeRepository, app.container.eventPreviews)
+        HomeViewModel(app.container.noticeRepository, app.container.calendarRepository)
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -133,7 +124,13 @@ fun HomeScreen(
         } else if (state.isError) {
             ErrorState(message = stringResource(R.string.home_error_body))
         } else {
-            HomeSections(state = state, onNoticeClick = onNoticeClick, onViewAllNotices = onViewAllNotices, onFeatureClick = onFeatureClick)
+            HomeSections(
+                state = state,
+                onNoticeClick = onNoticeClick,
+                onViewAllNotices = onViewAllNotices,
+                onEventClick = onEventClick,
+                onFeatureClick = onFeatureClick,
+            )
         }
         Spacer(modifier = Modifier.height(24.dp))
     }
@@ -162,6 +159,7 @@ private fun HomeSections(
     state: HomeUiState,
     onNoticeClick: (String) -> Unit,
     onViewAllNotices: () -> Unit,
+    onEventClick: (String) -> Unit,
     onFeatureClick: (CampusFeature) -> Unit,
 ) {
     // --- Important notices ------------------------------------------------
@@ -188,11 +186,25 @@ private fun HomeSections(
         }
     }
 
-    // --- Upcoming events (preview only, Phase 6) ---------------------------
+    // --- Upcoming events (published College Calendar events) --------------
     Spacer(modifier = Modifier.height(24.dp))
-    SectionHeader(title = stringResource(R.string.section_upcoming_events))
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        state.events.forEach { event -> EventPreviewCard(event = event) }
+    SectionHeader(
+        title = stringResource(R.string.section_upcoming_events),
+        actionLabel = stringResource(R.string.action_view_all),
+        onActionClick = onViewAllEvents,
+    )
+    if (state.events.isEmpty()) {
+        Text(
+            text = stringResource(R.string.home_no_upcoming_events),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            state.events.forEach { event ->
+                CalendarEventCard(event = event, onClick = { onEventClick(event.id) })
+            }
+        }
     }
 
     // --- Quick access ------------------------------------------------------
@@ -214,65 +226,6 @@ private fun HomeSections(
                 isRead = notice.id in state.readIds,
                 onClick = { onNoticeClick(notice.id) },
             )
-        }
-    }
-}
-
-@Composable
-private fun EventPreviewCard(event: CampusEventPreview) {
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.primaryContainer,
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = event.dayLabel,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                    Text(
-                        text = event.monthLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(14.dp),
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = event.location,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
         }
     }
 }

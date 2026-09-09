@@ -2,28 +2,27 @@ package com.gumlapolytechnic.gpconnect
 
 import android.app.Application
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseAuthRepository
+import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseCalendarRepository
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseNoticeRepository
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseSignupRequestRepository
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseUserRepository
-import com.gumlapolytechnic.gpconnect.data.mock.MockEventPreviews
 import com.gumlapolytechnic.gpconnect.data.repository.AuthRepository
+import com.gumlapolytechnic.gpconnect.data.repository.CalendarRepository
 import com.gumlapolytechnic.gpconnect.data.repository.NoticeRepository
 import com.gumlapolytechnic.gpconnect.data.repository.SignupRequestRepository
 import com.gumlapolytechnic.gpconnect.data.repository.UserRepository
 
 /**
- * Manual dependency container. Since Phase 4B the production repositories are
- * Firebase-backed (Authentication + Firestore); the retained mock notice
- * repository exists only as a migration reference and is not wired here.
+ * Manual dependency container. The production repositories are Firebase-backed
+ * (Authentication + Firestore); the retained mock notice repository exists only
+ * as a migration reference and is not wired here.
  */
 class AppContainer {
     val authRepository: AuthRepository = FirebaseAuthRepository()
     val noticeRepository: NoticeRepository = FirebaseNoticeRepository()
     val userRepository: UserRepository = FirebaseUserRepository()
     val signupRequestRepository: SignupRequestRepository = FirebaseSignupRequestRepository()
-
-    /** Phase 6 replaces this preview list with the real Events module. */
-    val eventPreviews = MockEventPreviews.upcoming
+    val calendarRepository: CalendarRepository = FirebaseCalendarRepository()
 }
 
 /** Application entry point. Hosts the dependency container. */

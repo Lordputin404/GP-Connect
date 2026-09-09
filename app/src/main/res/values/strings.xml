@@ -165,9 +165,43 @@
     <string name="feature_faculty_description">Faculty members, subjects and office hours.</string>
     <string name="feature_phase_note">Available in a later phase</string>
 
-    <!-- Calendar placeholder (full calendar arrives in a later phase) -->
-    <string name="calendar_placeholder_title">Calendar</string>
-    <string name="calendar_placeholder_body">The academic calendar and events arrive in a later phase.</string>
+    <!-- College Calendar (Firestore-backed) -->
+    <string name="calendar_screen_title">College Calendar</string>
+    <string name="calendar_error_body">The calendar could not be loaded.</string>
+    <string name="calendar_empty_title">No events yet</string>
+    <string name="calendar_empty_filtered_title">No matching events</string>
+    <string name="calendar_empty_body">Published college events will appear here.</string>
+    <string name="calendar_type_exam">Exam</string>
+    <string name="calendar_type_holiday">Holiday</string>
+    <string name="calendar_type_activity">Activity</string>
+    <string name="calendar_type_co_curricular">Co-curricular</string>
+    <string name="calendar_status_confirmed">Confirmed</string>
+    <string name="calendar_status_tentative">Tentative</string>
+    <string name="calendar_detail_title">Event</string>
+    <string name="calendar_all_day">All day</string>
+    <string name="calendar_event_not_found_title">Event not found</string>
+    <string name="calendar_event_not_found_body">This event may have been removed or is not published.</string>
+    <string name="home_no_upcoming_events">No upcoming events right now.</string>
+
+    <!-- Admin: College Calendar management -->
+    <string name="admin_calendar_title">College Calendar</string>
+    <string name="admin_calendar_add_title">Add event</string>
+    <string name="admin_calendar_edit_title">Edit event</string>
+    <string name="admin_calendar_delete_title">Delete event</string>
+    <string name="admin_calendar_empty_title">No calendar events</string>
+    <string name="admin_calendar_empty_body">Create the first college calendar event.</string>
+    <string name="admin_calendar_publish">Publish</string>
+    <string name="admin_calendar_unpublish">Unpublish</string>
+    <string name="admin_calendar_unpublished">Unpublished</string>
+    <string name="admin_calendar_action_failed">Action failed. Check your connection and permissions.</string>
+    <string name="admin_calendar_field_description">Description</string>
+    <string name="admin_calendar_field_type">Type</string>
+    <string name="admin_calendar_field_start_date">Start date</string>
+    <string name="admin_calendar_field_end_date">End date</string>
+    <string name="admin_calendar_field_all_day">All day</string>
+    <string name="admin_calendar_field_status">Status</string>
+    <string name="admin_calendar_field_published">Published</string>
+    <string name="admin_calendar_save_error">The event could not be saved. Check your connection and try again.</string>
 
     <!-- Profile -->
     <string name="profile_department_label">Department</string>
