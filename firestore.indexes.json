@@ -41,6 +41,14 @@
         { "fieldPath": "isAvailable", "order": "ASCENDING" },
         { "fieldPath": "displayOrder", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "canteenCategories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "enabled", "order": "ASCENDING" },
+        { "fieldPath": "displayOrder", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

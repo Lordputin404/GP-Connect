@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.gumlapolytechnic.gpconnect.data.model.CanteenCategory
 import com.gumlapolytechnic.gpconnect.data.model.CanteenMenuItem
 import com.gumlapolytechnic.gpconnect.data.repository.CanteenRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.stateIn
  * Errors from the repository/listener are surfaced through [CanteenUiState.isError]
  * so the UI can leave the loading/skeleton state and show a real error message.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class CanteenViewModel(
     private val canteenRepository: CanteenRepository,
 ) : ViewModel() {
@@ -37,17 +39,28 @@ class CanteenViewModel(
     private val _hasError = MutableStateFlow(false)
 
     private val categoriesFlow = canteenRepository.observeCategories()
-        .onEach { _hasError.value = false }
-        .catch { _ -> _hasError.value = true }
-
-    private val menuItemsFlow = _selectedCategoryId.flatMapLatest { categoryId: String? ->
-        when (categoryId) {
-            null -> canteenRepository.observeAvailableMenuItems()
-            else -> canteenRepository.observeAvailableMenuItemsByCategory(categoryId)
+        .onEach {
+            _hasError.value = false
         }
-    }
-        .onEach { _hasError.value = false }
-        .catch { _ -> _hasError.value = true }
+        .catch { _ ->
+            _hasError.value = true
+            emit(emptyList())
+        }
+
+    private val menuItemsFlow = _selectedCategoryId
+        .flatMapLatest { categoryId: String? ->
+            when (categoryId) {
+                null -> canteenRepository.observeAvailableMenuItems()
+                else -> canteenRepository.observeAvailableMenuItemsByCategory(categoryId)
+            }
+        }
+        .onEach {
+            _hasError.value = false
+        }
+        .catch { _ ->
+            _hasError.value = true
+            emit(emptyList())
+        }
 
     val uiState: StateFlow<CanteenUiState> = combine(
         categoriesFlow,
@@ -60,7 +73,7 @@ class CanteenViewModel(
         hasError: Boolean ->
         CanteenUiState(
             isLoading = false,
-            isError = hasError && categories.isEmpty() && menuItems.isEmpty(),
+            isError = hasError,
             categories = categories,
             menuItems = menuItems,
             selectedCategoryId = selectedId,

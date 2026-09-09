@@ -222,10 +222,27 @@ service cloud.firestore {
     }
 
     function isMenuItemAvailableListQuery() {
-      return request.query.where.size() == 1
+      return (
+        request.query.where.size() == 1
         && request.query.where[0].field == 'isAvailable'
         && request.query.where[0].op == '=='
-        && request.query.where[0].value == true;
+        && request.query.where[0].value == true
+      ) || (
+        request.query.where.size() == 2
+        && (
+          (request.query.where[0].field == 'categoryId'
+          && request.query.where[0].op == '=='
+          && request.query.where[1].field == 'isAvailable'
+          && request.query.where[1].op == '=='
+          && request.query.where[1].value == true)
+          ||
+          (request.query.where[1].field == 'categoryId'
+          && request.query.where[1].op == '=='
+          && request.query.where[0].field == 'isAvailable'
+          && request.query.where[0].op == '=='
+          && request.query.where[0].value == true)
+        )
+      );
     }
 
     // ---- users/{uid} -------------------------------------------------------
