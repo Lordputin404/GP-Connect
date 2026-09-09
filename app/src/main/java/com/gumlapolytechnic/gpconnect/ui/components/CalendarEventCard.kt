@@ -64,12 +64,11 @@ private fun CalendarEventType.colorPair(): Pair<Color, Color> = when (this) {
 @Composable
 fun CalendarEventCard(
     event: CalendarEvent,
-    onClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         onClick = onClick,
-        enabled = onClick != null,
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,

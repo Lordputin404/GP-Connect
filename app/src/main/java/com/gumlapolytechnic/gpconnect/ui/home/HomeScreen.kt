@@ -128,6 +128,7 @@ fun HomeScreen(
                 state = state,
                 onNoticeClick = onNoticeClick,
                 onViewAllNotices = onViewAllNotices,
+                onViewAllEvents = onViewAllEvents,
                 onEventClick = onEventClick,
                 onFeatureClick = onFeatureClick,
             )
@@ -159,6 +160,7 @@ private fun HomeSections(
     state: HomeUiState,
     onNoticeClick: (String) -> Unit,
     onViewAllNotices: () -> Unit,
+    onViewAllEvents: () -> Unit,
     onEventClick: (String) -> Unit,
     onFeatureClick: (CampusFeature) -> Unit,
 ) {
