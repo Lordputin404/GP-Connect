@@ -104,5 +104,31 @@ enum class Course(val displayName: String, val department: Department) {
 /** Semesters a diploma/BCA student can be in. Matches the notice form's range. */
 val SEMESTER_RANGE = 1..6
 
+/**
+ * Editable public information for one department, stored at
+ * `departments/{departmentId}` where the document id is the canonical
+ * [Department] name (the same id used by `users.department` and the HOD
+ * assignment system).
+ *
+ * [hodName] is the display name of the assigned HOD, stamped onto the document
+ * by that HOD when saving. Students cannot read the users collection (its
+ * rules restrict reads to SUPER_ADMIN/the department's own HOD), so the name
+ * is carried here instead of queried — the HOD writes nothing but their own
+ * profile's display name, so this grants no authority.
+ *
+ * All other fields are optional: a department document may legitimately not
+ * exist yet (the HOD has never filled in the form), in which case the screen
+ * shows the department name from the enum and "not available" placeholders.
+ */
+data class DepartmentInfo(
+    /** Canonical [Department] id this document belongs to. */
+    val departmentId: String,
+    val hodName: String = "",
+    val about: String = "",
+    val officeRoom: String = "",
+    val contact: String = "",
+    val updatedAt: Long = 0L,
+)
+
 private fun String.normalizeKey(): String =
     uppercase().filter { it.isLetterOrDigit() }

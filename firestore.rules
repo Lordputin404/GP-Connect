@@ -381,6 +381,48 @@ service cloud.firestore {
             && resource.data.ownerRole == currentRole());
     }
 
+    // ---- departments/{departmentId} ----------------------------------------
+    // Public information for the five academic departments. The document id
+    // is the canonical Department enum name — the exact same registry used by
+    // users.department, signupRequests.department and the HOD assignment
+    // system. The only HOD data here is the assigned HOD's display name
+    // (hodName, validated to equal the saving HOD's own profile name); the
+    // assignment itself stays on the users profiles, so no duplicate
+    // department/HOD registry exists.
+    match /departments/{departmentId} {
+      function isHodOfThisDepartment() {
+        return isHod() && departmentId == currentDepartment();
+      }
+
+      // Any enabled member may read department info.
+      allow get, list: if isEnabled();
+
+      // HOD of exactly this department may create/update its info document,
+      // constrained to the info fields (name keys) and bounded strings.
+      // hodName is the saving HOD's own display name (students cannot read
+      // users, so the name rides on this document).
+      allow create, update: if isHodOfThisDepartment() &&
+        request.resource.data.keys().hasAll(
+          ['departmentId', 'hodName', 'about', 'officeRoom', 'contact', 'updatedAt']
+        ) &&
+        request.resource.data.keys().hasOnly(
+          ['departmentId', 'hodName', 'about', 'officeRoom', 'contact', 'updatedAt']
+        ) &&
+        request.resource.data.departmentId == departmentId &&
+        request.resource.data.departmentId in departmentIds() &&
+        isNonEmptyString(request.resource.data.hodName) &&
+        request.resource.data.hodName == profile().displayName &&
+        request.resource.data.about is string &&
+        request.resource.data.about.size() <= 2000 &&
+        request.resource.data.officeRoom is string &&
+        request.resource.data.officeRoom.size() <= 60 &&
+        request.resource.data.contact is string &&
+        request.resource.data.contact.size() <= 200 &&
+        request.resource.data.updatedAt is int;
+
+      allow delete: if isSuperAdmin();
+    }
+
     // ---- calendarEvents/{eventId} ------------------------------------------
     // The College Calendar. Members (any enabled user) read *published*
     // events only; the SUPER_ADMIN manages the collection (create/update/

@@ -30,6 +30,8 @@ import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarEventDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
+import com.gumlapolytechnic.gpconnect.ui.departments.DepartmentDetailScreen
+import com.gumlapolytechnic.gpconnect.ui.departments.DepartmentsScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticeDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticesScreen
@@ -48,11 +50,14 @@ object Routes {
     const val NOTICE_DETAIL_ARG = "noticeId"
     const val EVENT_DETAIL = "event/{eventId}"
     const val EVENT_DETAIL_ARG = "eventId"
+    const val DEPARTMENT_DETAIL = "department/{departmentId}"
+    const val DEPARTMENT_DETAIL_ARG = "departmentId"
     const val FEATURE_PLACEHOLDER = "feature/{feature}"
     const val FEATURE_ARG = "feature"
 
     fun noticeDetail(noticeId: String) = "notice/$noticeId"
     fun eventDetail(eventId: String) = "event/$eventId"
+    fun departmentDetail(departmentId: String) = "department/$departmentId"
     fun featurePlaceholder(feature: CampusFeature) = "feature/${feature.routeArg}"
 }
 
@@ -119,7 +124,13 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     onViewAllEvents = { navController.navigateTopLevel(Routes.CALENDAR) },
                     onEventClick = { id -> navController.navigate(Routes.eventDetail(id)) },
                     onFeatureClick = { feature ->
-                        navController.navigate(Routes.featurePlaceholder(feature))
+                        // The Departments module is live; every other campus
+                        // feature stays on its placeholder until its phase.
+                        if (feature == CampusFeature.DEPARTMENTS) {
+                            navController.navigate("departments")
+                        } else {
+                            navController.navigate(Routes.featurePlaceholder(feature))
+                        }
                     },
                 )
             }
@@ -150,6 +161,23 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                 if (eventId != null) {
                     CalendarEventDetailScreen(
                         eventId = eventId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+            }
+            composable("departments") {
+                DepartmentsScreen(
+                    onDepartmentClick = { department ->
+                        navController.navigate(Routes.departmentDetail(department.id))
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.DEPARTMENT_DETAIL) { entry ->
+                val departmentId = entry.arguments?.getString(Routes.DEPARTMENT_DETAIL_ARG)
+                if (departmentId != null) {
+                    DepartmentDetailScreen(
+                        departmentId = departmentId,
                         onBack = { navController.popBackStack() },
                     )
                 }

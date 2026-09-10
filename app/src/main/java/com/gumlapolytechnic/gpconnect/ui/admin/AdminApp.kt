@@ -16,6 +16,7 @@ object AdminRoutes {
     const val ADMIN_MANAGEMENT = "admin-management"
     const val SIGNUP_REQUESTS = "admin-signup-requests"
     const val TEACHERS = "admin-teachers"
+    const val DEPARTMENT_INFO = "admin-department-info"
     const val CALENDAR = "admin-calendar"
     const val CALENDAR_CREATE = "admin-calendar-create"
     const val CALENDAR_EDIT = "admin-calendar-edit/{eventId}"
@@ -69,6 +70,14 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                 },
                 onOpenTeachers = if (user.isHod) {
                     { navController.navigate(AdminRoutes.TEACHERS) }
+                } else {
+                    null
+                },
+                // Department information editing is scoped to exactly the
+                // department on the HOD's profile; the screen and the rules
+                // both reject every other department.
+                onOpenDepartmentInfo = if (user.isHod) {
+                    { navController.navigate(AdminRoutes.DEPARTMENT_INFO) }
                 } else {
                     null
                 },
@@ -139,6 +148,13 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
         if (user.isHod) {
             composable(AdminRoutes.TEACHERS) {
                 TeacherManagementScreen(
+                    adminUser = user,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            // HOD's own department information (about/office/contact).
+            composable(AdminRoutes.DEPARTMENT_INFO) {
+                AdminDepartmentEditScreen(
                     adminUser = user,
                     onBack = { navController.popBackStack() },
                 )
