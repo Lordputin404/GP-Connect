@@ -48,21 +48,24 @@ class AdminDepartmentEditViewModel(
     val uiState: StateFlow<DepartmentEditUiState> = _uiState.asStateFlow()
 
     init {
-        val department = hodDepartment ?: return
-        viewModelScope.launch {
-            // One-shot load (the admin-form pattern): after prefill, the
-            // fields belong to the editor — a later snapshot replay must
-            // never clobber in-progress typing.
-            val loaded = departmentRepository.observeDepartmentInfo(department)
-                .first()
-                .getOrNull()
-            _uiState.update { state ->
-                state.copy(
-                    isLoading = false,
-                    about = loaded?.about.orEmpty(),
-                    officeRoom = loaded?.officeRoom.orEmpty(),
-                    contact = loaded?.contact.orEmpty(),
-                )
+        // A bare `return` is prohibited in an init block; ?.let preserves the
+        // same skip: without a bound department there is nothing to prefill.
+        hodDepartment?.let { department ->
+            viewModelScope.launch {
+                // One-shot load (the admin-form pattern): after prefill, the
+                // fields belong to the editor — a later snapshot replay must
+                // never clobber in-progress typing.
+                val loaded = departmentRepository.observeDepartmentInfo(department)
+                    .first()
+                    .getOrNull()
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        about = loaded?.about.orEmpty(),
+                        officeRoom = loaded?.officeRoom.orEmpty(),
+                        contact = loaded?.contact.orEmpty(),
+                    )
+                }
             }
         }
     }
