@@ -16,9 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.AttachFile
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -30,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,7 +49,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
-import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Course
 import com.gumlapolytechnic.gpconnect.data.model.Department
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
@@ -66,7 +62,7 @@ import com.gumlapolytechnic.gpconnect.util.Dates
 
 /**
  * Notice create/edit form (one form, two modes): title, category chips, body,
- * audience selectors, date picker, pinned toggle and attachment metadata.
+ * audience selectors, date picker and pinned toggle.
  * Inline validation, save-disabled-while-saving, and a saved signal that
  * returns to the dashboard.
  */
@@ -88,7 +84,6 @@ fun AdminNoticeFormScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     var showDatePicker by remember { mutableStateOf(false) }
-    var showAttachmentDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.saved) {
         if (state.saved) onBack()
@@ -297,64 +292,6 @@ fun AdminNoticeFormScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    FieldLabel(stringResource(R.string.admin_form_field_attachments))
-                    if (state.attachments.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.admin_form_attachments_empty),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    state.attachments.forEach { attachment ->
-                        Surface(
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(start = 12.dp, end = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.AttachFile,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = attachment.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                IconButton(onClick = { viewModel.removeAttachment(attachment) }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Close,
-                                        contentDescription = stringResource(
-                                            R.string.admin_form_attachment_remove,
-                                        ),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedButton(
-                        onClick = { showAttachmentDialog = true },
-                        enabled = !state.isSaving,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.AttachFile,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(stringResource(R.string.admin_form_add_attachment))
-                    }
-
                     Spacer(modifier = Modifier.height(28.dp))
                     if (state.saveError) {
                         Text(
@@ -419,44 +356,4 @@ fun AdminNoticeFormScreen(
             DatePicker(state = pickerState)
         }
     }
-
-    if (showAttachmentDialog) {
-        AttachmentNameDialog(
-            onDismiss = { showAttachmentDialog = false },
-            onConfirm = { name ->
-                viewModel.addAttachment(name)
-                showAttachmentDialog = false
-            },
-        )
-    }
-}
-
-@Composable
-private fun AttachmentNameDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.admin_form_add_attachment)) },
-        text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.admin_form_attachment_hint)) },
-                singleLine = true,
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(name) },
-                enabled = name.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.admin_form_attachment_add))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.admin_action_cancel))
-            }
-        },
-    )
 }

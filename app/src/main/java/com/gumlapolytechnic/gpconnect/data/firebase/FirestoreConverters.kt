@@ -1,7 +1,6 @@
 package com.gumlapolytechnic.gpconnect.data.firebase
 
 import com.gumlapolytechnic.gpconnect.data.model.AdminModule
-import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
 import com.gumlapolytechnic.gpconnect.data.model.CalendarEvent
 import com.gumlapolytechnic.gpconnect.data.model.CalendarEventStatus
@@ -143,9 +142,6 @@ internal fun DocumentSnapshot.toNotice(): Notice? {
         category = data.string("category").toCategory(),
         isPinned = data["isPinned"] as? Boolean ?: false,
         audience = audienceFrom(data["audience"]),
-        attachments = (data["attachments"] as? List<*>)
-            ?.mapNotNull { entry -> (entry as? Map<*, *>)?.string("name")?.let(::Attachment) }
-            .orEmpty(),
         author = data.string("author"),
         createdAt = data.long("createdAt"),
         updatedAt = data.long("updatedAt").takeIf { it != 0L } ?: data.long("createdAt"),
@@ -161,7 +157,6 @@ internal fun noticeFields(
     category: NoticeCategory,
     isPinned: Boolean,
     audience: Audience,
-    attachments: List<Attachment>,
     author: String,
     createdAt: Long,
     updatedAt: Long,
@@ -174,7 +169,6 @@ internal fun noticeFields(
     "category" to category.name,
     "isPinned" to isPinned,
     "audience" to audienceFields(audience),
-    "attachments" to attachments.map { mapOf("name" to it.name) },
     "author" to author,
     "createdAt" to createdAt,
     "updatedAt" to updatedAt,

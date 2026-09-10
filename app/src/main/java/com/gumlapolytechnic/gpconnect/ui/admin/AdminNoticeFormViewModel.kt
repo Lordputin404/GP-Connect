@@ -3,7 +3,6 @@ package com.gumlapolytechnic.gpconnect.ui.admin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gumlapolytechnic.gpconnect.data.model.AdminModule
-import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
 import com.gumlapolytechnic.gpconnect.data.model.Course
 import com.gumlapolytechnic.gpconnect.data.model.Department
@@ -45,7 +44,6 @@ data class NoticeFormUiState(
     val semesterText: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val isPinned: Boolean = false,
-    val attachments: List<Attachment> = emptyList(),
     val departments: List<String> = DEPARTMENT_IDS,
     val courses: List<String> = COURSE_IDS,
     val titleError: Boolean = false,
@@ -110,7 +108,6 @@ class AdminNoticeFormViewModel(
                                 ?.semester?.toString().orEmpty(),
                             createdAt = notice.createdAt,
                             isPinned = notice.isPinned,
-                            attachments = notice.attachments,
                         )
                     }
                 }
@@ -154,16 +151,6 @@ class AdminNoticeFormViewModel(
         _uiState.update { it.copy(isPinned = pinned) }
     }
 
-    fun addAttachment(name: String) {
-        val trimmed = name.trim()
-        if (trimmed.isEmpty()) return
-        _uiState.update { it.copy(attachments = it.attachments + Attachment(trimmed)) }
-    }
-
-    fun removeAttachment(attachment: Attachment) {
-        _uiState.update { it.copy(attachments = it.attachments - attachment) }
-    }
-
     fun save() {
         val state = _uiState.value
         val titleError = state.title.isBlank()
@@ -202,7 +189,6 @@ class AdminNoticeFormViewModel(
                             category = state.category,
                             audience = audience,
                             isPinned = state.isPinned,
-                            attachments = state.attachments,
                             author = adminUser.name,
                             createdAt = state.createdAt,
                             ownerRole = adminUser.role,
@@ -223,8 +209,7 @@ class AdminNoticeFormViewModel(
                                 category = state.category,
                                 audience = audience,
                                 isPinned = state.isPinned,
-                                attachments = state.attachments,
-                                createdAt = state.createdAt,
+                                    createdAt = state.createdAt,
                             ),
                         )
                     }

@@ -17,9 +17,6 @@ sealed interface Audience {
     data class Course(val course: String, val semester: Int? = null) : Audience
 }
 
-/** Demo attachment reference — name only until Firebase Storage exists (Phase 4+). */
-data class Attachment(val name: String)
-
 /**
  * Official college notice. Timestamps are epoch milliseconds. Ownership
  * metadata (createdBy uid, ownerRole, module) drives module-scoped
@@ -32,7 +29,6 @@ data class Notice(
     val category: NoticeCategory,
     val isPinned: Boolean,
     val audience: Audience,
-    val attachments: List<Attachment> = emptyList(),
     val author: String,
     val createdAt: Long,
     val updatedAt: Long = createdAt,

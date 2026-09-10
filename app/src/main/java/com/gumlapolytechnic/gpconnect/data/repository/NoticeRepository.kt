@@ -1,7 +1,6 @@
 package com.gumlapolytechnic.gpconnect.data.repository
 
 import com.gumlapolytechnic.gpconnect.data.model.AdminModule
-import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
@@ -30,7 +29,6 @@ data class NoticeDraft(
     val category: NoticeCategory,
     val audience: Audience,
     val isPinned: Boolean,
-    val attachments: List<Attachment>,
     val author: String,
     val createdAt: Long,
     val ownerRole: UserRole,

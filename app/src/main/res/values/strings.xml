@@ -83,12 +83,6 @@
     <string name="admin_form_field_audience">Audience</string>
     <string name="admin_form_field_date">Date</string>
     <string name="admin_form_field_pinned">Pinned to top</string>
-    <string name="admin_form_field_attachments">Attachments</string>
-    <string name="admin_form_attachments_empty">No attachments.</string>
-    <string name="admin_form_add_attachment">Add attachment</string>
-    <string name="admin_form_attachment_hint">Attachment file name (demo)</string>
-    <string name="admin_form_attachment_add">Add</string>
-    <string name="admin_form_attachment_remove">Remove attachment</string>
     <string name="admin_form_error_title_required">Title is required</string>
     <string name="admin_form_error_body_required">Body is required</string>
     <string name="admin_form_error_semester">Enter a semester from 1 to 6</string>
@@ -146,7 +140,6 @@
     <string name="notice_audience_format">Audience: %1$s</string>
     <string name="audience_all_students">All students</string>
     <string name="audience_course_format">%1$s students</string>
-    <string name="notice_attachments_title">Attachments</string>
     <string name="notice_not_found_title">Notice not found</string>
     <string name="notice_not_found_body">This notice may have been removed.</string>
 

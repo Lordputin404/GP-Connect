@@ -50,7 +50,6 @@ class MockNoticeRepository : NoticeRepository {
             category = draft.category,
             isPinned = draft.isPinned,
             audience = draft.audience,
-            attachments = draft.attachments,
             author = draft.author,
             createdAt = draft.createdAt,
             createdBy = "mock",

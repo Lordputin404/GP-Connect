@@ -1,6 +1,5 @@
 package com.gumlapolytechnic.gpconnect.data.mock
 
-import com.gumlapolytechnic.gpconnect.data.model.Attachment
 import com.gumlapolytechnic.gpconnect.data.model.Audience
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
@@ -29,7 +28,6 @@ object MockNotices {
             category = NoticeCategory.EXAM,
             isPinned = true,
             audience = Audience.All,
-            attachments = listOf(Attachment("Semester_Exam_Schedule.pdf")),
             author = "Examination Cell",
             createdAt = daysAgo(1),
         ),
@@ -86,7 +84,6 @@ object MockNotices {
             category = NoticeCategory.LIBRARY,
             isPinned = false,
             audience = Audience.Department(department = "Computer Applications"),
-            attachments = listOf(Attachment("Library_Notice.pdf")),
             author = "Central Library",
             createdAt = daysAgo(5),
         ),
