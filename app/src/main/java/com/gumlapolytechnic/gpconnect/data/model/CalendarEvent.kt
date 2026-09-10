@@ -18,54 +18,6 @@ enum class CalendarEventStatus {
 }
 
 /**
- * Supported calendar event attachment file types. The extension allow-list is
- * mirrored by storage.rules (`calendarEvents/{eventId}/attachments/…`).
- */
-enum class EventAttachmentType {
-    PDF,
-    DOC,
-    DOCX,
-    JPG,
-    JPEG,
-    PNG,
-    WEBP;
-
-    val mimeType: String
-        get() = when (this) {
-            PDF -> "application/pdf"
-            DOC -> "application/msword"
-            DOCX -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            JPG, JPEG -> "image/jpeg"
-            PNG -> "image/png"
-            WEBP -> "image/webp"
-        }
-
-    companion object {
-        /** Extension (lowercase, without dot) → type; unknown extensions yield null. */
-        private val byExtension = entries.associateBy { it.name.lowercase() }
-
-        /** `null` when the file name has no supported extension. */
-        fun fromFileName(fileName: String): EventAttachmentType? =
-            byExtension[fileName.substringAfterLast('.', "").lowercase()]
-    }
-}
-
-/**
- * Metadata of one file attached to a calendar event. The binary lives in
- * Firebase Storage at [storagePath] (never in Firestore); this metadata is
- * embedded in the `calendarEvents/{eventId}` document's `attachments` array.
- */
-data class EventAttachment(
-    val name: String,
-    val storagePath: String,
-    val downloadUrl: String,
-    val mimeType: String,
-    /** File size in bytes. */
-    val size: Long,
-    val type: EventAttachmentType,
-)
-
-/**
  * One entry of the College Calendar, stored at `calendarEvents/{eventId}`.
  *
  * Dates are epoch milliseconds persisted as Firestore numbers — the same
@@ -84,7 +36,6 @@ data class CalendarEvent(
     val isAllDay: Boolean = false,
     val status: CalendarEventStatus = CalendarEventStatus.CONFIRMED,
     val isPublished: Boolean = false,
-    val attachments: List<EventAttachment> = emptyList(),
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
 )

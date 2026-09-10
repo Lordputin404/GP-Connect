@@ -7,8 +7,6 @@ import com.gumlapolytechnic.gpconnect.data.model.CalendarEvent
 import com.gumlapolytechnic.gpconnect.data.model.CalendarEventStatus
 import com.gumlapolytechnic.gpconnect.data.model.CalendarEventType
 import com.gumlapolytechnic.gpconnect.data.model.Department
-import com.gumlapolytechnic.gpconnect.data.model.EventAttachment
-import com.gumlapolytechnic.gpconnect.data.model.EventAttachmentType
 import com.gumlapolytechnic.gpconnect.data.model.Notice
 import com.gumlapolytechnic.gpconnect.data.model.NoticeCategory
 import com.gumlapolytechnic.gpconnect.data.model.SignupRequest
@@ -241,29 +239,8 @@ internal fun DocumentSnapshot.toCalendarEvent(): CalendarEvent? {
         isAllDay = data["isAllDay"] as? Boolean ?: false,
         status = data.stringOrNull("status").toEventStatus(),
         isPublished = data["isPublished"] as? Boolean ?: false,
-        attachments = (data["attachments"] as? List<*>)
-            ?.mapNotNull { entry -> (entry as? Map<*, *>).toEventAttachment() }
-            .orEmpty(),
         createdAt = data.long("createdAt"),
         updatedAt = data.long("updatedAt"),
-    )
-}
-
-/** Defensive parse of one `attachments[]` map entry; malformed shapes drop out. */
-internal fun Map<*, *>.toEventAttachment(): EventAttachment? {
-    val name = stringOrNull("name") ?: return null
-    val storagePath = stringOrNull("storagePath") ?: return null
-    val type = stringOrNull("type")
-        ?.let { runCatching { EventAttachmentType.valueOf(it) }.getOrNull() }
-        ?: EventAttachmentType.fromFileName(name)
-        ?: EventAttachmentType.PDF
-    return EventAttachment(
-        name = name,
-        storagePath = storagePath,
-        downloadUrl = string("downloadUrl"),
-        mimeType = stringOrNull("mimeType") ?: type.mimeType,
-        size = (this["size"] as? Long) ?: 0L,
-        type = type,
     )
 }
 
@@ -282,7 +259,6 @@ internal fun calendarEventFields(
     isAllDay: Boolean,
     status: CalendarEventStatus,
     isPublished: Boolean,
-    attachments: List<EventAttachment>,
     createdAt: Long,
     updatedAt: Long,
 ): Map<String, Any?> = mapOf(
@@ -294,19 +270,8 @@ internal fun calendarEventFields(
     "isAllDay" to isAllDay,
     "status" to status.name,
     "isPublished" to isPublished,
-    "attachments" to attachments.map { eventAttachmentFields(it) },
     "createdAt" to createdAt,
     "updatedAt" to updatedAt,
-)
-
-/** The `attachments[]` map persisted on the event document. */
-internal fun eventAttachmentFields(attachment: EventAttachment): Map<String, Any?> = mapOf(
-    "name" to attachment.name,
-    "storagePath" to attachment.storagePath,
-    "downloadUrl" to attachment.downloadUrl,
-    "mimeType" to attachment.mimeType,
-    "size" to attachment.size,
-    "type" to attachment.type.name,
 )
 
 private fun String?.toEventType(): CalendarEventType =
