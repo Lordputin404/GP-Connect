@@ -203,6 +203,23 @@
     <string name="admin_calendar_field_published">Published</string>
     <string name="admin_calendar_save_error">The event could not be saved. Check your connection and try again.</string>
 
+    <!-- Admin: calendar event attachments -->
+    <string name="admin_calendar_field_attachments">Attachments</string>
+    <string name="admin_calendar_attachments_empty">No attachments.</string>
+    <string name="admin_calendar_add_attachment">Add attachment</string>
+    <string name="admin_calendar_attachment_remove">Remove attachment</string>
+    <string name="admin_calendar_attachment_unsupported">Unsupported file type. Only PDF, DOC, DOCX, JPG, JPEG, PNG and WebP are allowed.</string>
+    <string name="admin_calendar_attachment_meta">%1$s • %2$s</string>
+
+    <!-- Calendar event detail: attachments -->
+    <string name="calendar_attachments_title">Related attachments</string>
+    <string name="calendar_attachment_open">Open</string>
+    <string name="calendar_attachment_opening">Opening…</string>
+    <string name="calendar_attachment_open_failed">The attachment could not be opened. Check your connection and try again.</string>
+    <string name="calendar_attachment_no_app">No app on this device can open this file type. Install a viewer (for example a PDF reader) and try again.</string>
+    <string name="calendar_attachment_size_kb">%1$d KB</string>
+    <string name="calendar_attachment_size_mb">%1$.1f MB</string>
+
     <!-- Profile -->
     <string name="profile_department_label">Department</string>
     <string name="profile_roll_no_label">Roll number</string>

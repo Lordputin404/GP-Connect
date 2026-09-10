@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exposed only through FileProvider (manifest). calendarEvents/ mirrors the
+     Firebase Storage layout the repository downloads into, so every cached
+     attachment is shareable with external viewer apps. -->
+<paths>
+    <cache-path name="event_attachments" path="eventAttachments/" />
+</paths>
