@@ -242,7 +242,7 @@ internal fun DocumentSnapshot.toCalendarEvent(): CalendarEvent? {
         status = data.stringOrNull("status").toEventStatus(),
         isPublished = data["isPublished"] as? Boolean ?: false,
         attachments = (data["attachments"] as? List<*>)
-            ?.mapNotNull { entry -> (entry as? Map<*, *>).toEventAttachment() }
+            ?.mapNotNull { entry -> (entry as? Map<*, *>)?.toEventAttachment() }
             .orEmpty(),
         createdAt = data.long("createdAt"),
         updatedAt = data.long("updatedAt"),
