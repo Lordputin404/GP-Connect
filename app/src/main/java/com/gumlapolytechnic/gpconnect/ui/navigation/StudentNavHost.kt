@@ -32,6 +32,8 @@ import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarEventDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
 import com.gumlapolytechnic.gpconnect.ui.departments.DepartmentDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.departments.DepartmentsScreen
+import com.gumlapolytechnic.gpconnect.ui.faculty.FacultyDetailScreen
+import com.gumlapolytechnic.gpconnect.ui.faculty.FacultyScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticeDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticesScreen
@@ -52,12 +54,16 @@ object Routes {
     const val EVENT_DETAIL_ARG = "eventId"
     const val DEPARTMENT_DETAIL = "department/{departmentId}"
     const val DEPARTMENT_DETAIL_ARG = "departmentId"
+    const val FACULTY = "faculty"
+    const val FACULTY_DETAIL = "faculty/{facultyId}"
+    const val FACULTY_DETAIL_ARG = "facultyId"
     const val FEATURE_PLACEHOLDER = "feature/{feature}"
     const val FEATURE_ARG = "feature"
 
     fun noticeDetail(noticeId: String) = "notice/$noticeId"
     fun eventDetail(eventId: String) = "event/$eventId"
     fun departmentDetail(departmentId: String) = "department/$departmentId"
+    fun facultyDetail(facultyId: String) = "faculty/$facultyId"
     fun featurePlaceholder(feature: CampusFeature) = "feature/${feature.routeArg}"
 }
 
@@ -124,12 +130,12 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     onViewAllEvents = { navController.navigateTopLevel(Routes.CALENDAR) },
                     onEventClick = { id -> navController.navigate(Routes.eventDetail(id)) },
                     onFeatureClick = { feature ->
-                        // The Departments module is live; every other campus
-                        // feature stays on its placeholder until its phase.
-                        if (feature == CampusFeature.DEPARTMENTS) {
-                            navController.navigate("departments")
-                        } else {
-                            navController.navigate(Routes.featurePlaceholder(feature))
+                        // Departments and Faculty are live; Library/Canteen
+                        // stay on their placeholders until their phases.
+                        when (feature) {
+                            CampusFeature.DEPARTMENTS -> navController.navigate("departments")
+                            CampusFeature.FACULTY -> navController.navigate(Routes.FACULTY)
+                            else -> navController.navigate(Routes.featurePlaceholder(feature))
                         }
                     },
                 )
@@ -178,6 +184,24 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                 if (departmentId != null) {
                     DepartmentDetailScreen(
                         departmentId = departmentId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+            }
+            // Faculty directory of the signed-in student's own department.
+            composable(Routes.FACULTY) {
+                FacultyScreen(
+                    user = user,
+                    onFacultyClick = { id -> navController.navigate(Routes.facultyDetail(id)) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.FACULTY_DETAIL) { entry ->
+                val facultyId = entry.arguments?.getString(Routes.FACULTY_DETAIL_ARG)
+                if (facultyId != null) {
+                    FacultyDetailScreen(
+                        user = user,
+                        facultyId = facultyId,
                         onBack = { navController.popBackStack() },
                     )
                 }

@@ -130,5 +130,30 @@ data class DepartmentInfo(
     val updatedAt: Long = 0L,
 )
 
+/**
+ * One faculty member of a department, stored at
+ * `departments/{departmentId}/faculty/{facultyId}` — a subcollection of the
+ * department this teacher belongs to, so the department scoping is part of
+ * the data's address, not a query convention.
+ *
+ * This is directory data only — it is NOT a login account. Faculty accounts
+ * (if any) live in users/{uid} via the existing role system; this document
+ * exists purely so students can look up their department's teaching staff.
+ *
+ * name/designation/roomNumber are required by the HOD form and the rules;
+ * email/phone are optional (empty string when absent).
+ */
+data class Faculty(
+    val id: String = "",
+    val departmentId: String = "",
+    val name: String = "",
+    val designation: String = "",
+    val roomNumber: String = "",
+    val email: String = "",
+    val phone: String = "",
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
+)
+
 private fun String.normalizeKey(): String =
     uppercase().filter { it.isLetterOrDigit() }

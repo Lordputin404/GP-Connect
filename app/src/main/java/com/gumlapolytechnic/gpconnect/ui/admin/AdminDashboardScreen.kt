@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Domain
@@ -87,6 +88,7 @@ fun AdminDashboardScreen(
     onOpenSignupRequests: (() -> Unit)?,
     onOpenTeachers: (() -> Unit)?,
     onOpenDepartmentInfo: (() -> Unit)?,
+    onOpenFaculty: (() -> Unit)?,
 ) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: AdminDashboardViewModel = viewModel {
@@ -366,6 +368,23 @@ fun AdminDashboardScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.admin_department_edit_title))
+                            }
+                        }
+                        // HOD only: manage the faculty directory of exactly
+                        // the department bound to this admin's profile.
+                        if (onOpenFaculty != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = onOpenFaculty,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Badge,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.admin_faculty_title))
                             }
                         }
                         Spacer(modifier = Modifier.height(20.dp))

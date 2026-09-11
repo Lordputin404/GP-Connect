@@ -178,6 +178,34 @@
     <string name="admin_department_no_department_body">Your account is not bound to a department, so there is nothing to edit here. Contact the Super Admin.</string>
     <string name="admin_department_save_error">The department information could not be saved. Check your connection and try again.</string>
 
+    <!-- Student: Faculty directory (own department only) -->
+    <string name="faculty_detail_title">Faculty</string>
+    <string name="faculty_error_body">The faculty list could not be loaded.</string>
+    <string name="faculty_empty_title">No faculty yet</string>
+    <string name="faculty_empty_body">Faculty members of your department will appear here.</string>
+    <string name="faculty_no_department_title">No department assigned</string>
+    <string name="faculty_no_department_body">Your profile has no department, so there is no faculty directory to show. Contact your department HOD.</string>
+    <string name="faculty_not_found_title">Faculty member not found</string>
+    <string name="faculty_not_found_body">This faculty member may have been removed.</string>
+    <string name="faculty_section_department">Department</string>
+    <string name="faculty_section_room">Room number</string>
+    <string name="faculty_section_email">Email</string>
+    <string name="faculty_section_phone">Phone</string>
+
+    <!-- Admin (HOD): faculty directory management -->
+    <string name="admin_faculty_title">Faculty</string>
+    <string name="admin_faculty_add_title">Add faculty</string>
+    <string name="admin_faculty_edit_title">Edit faculty</string>
+    <string name="admin_faculty_delete_title">Delete faculty member</string>
+    <string name="admin_faculty_empty_title">No faculty yet</string>
+    <string name="admin_faculty_empty_body">Add the first faculty member of your department.</string>
+    <string name="admin_faculty_action_failed">Action failed. Check your connection and permissions.</string>
+    <string name="admin_faculty_save_error">The faculty member could not be saved. Check your connection and try again.</string>
+    <string name="faculty_field_name">Name</string>
+    <string name="faculty_field_designation">Designation</string>
+    <string name="faculty_field_room">Room number</string>
+    <string name="faculty_field_required">This field is required</string>
+
     <!-- College Calendar (Firestore-backed) -->
     <string name="calendar_screen_title">College Calendar</string>
     <string name="calendar_error_body">The calendar could not be loaded.</string>

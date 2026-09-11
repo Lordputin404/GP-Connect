@@ -389,9 +389,20 @@ service cloud.firestore {
     // (hodName, validated to equal the saving HOD's own profile name); the
     // assignment itself stays on the users profiles, so no duplicate
     // department/HOD registry exists.
+    //
+    // The faculty/ subcollection below holds the department's teaching
+    // staff directory (departments/{departmentId}/faculty/{facultyId}).
     match /departments/{departmentId} {
       function isHodOfThisDepartment() {
         return isHod() && departmentId == currentDepartment();
+      }
+
+      // A member of exactly this department, the department's own HOD, or
+      // the SUPER_ADMIN. Members therefore read only their own department's
+      // faculty; there is no cross-department read at all.
+      function canReadThisDepartment() {
+        return isSuperAdmin() || isHodOfThisDepartment() ||
+          (isEnabled() && departmentId == currentDepartment());
       }
 
       // Any enabled member may read department info.
@@ -421,6 +432,43 @@ service cloud.firestore {
         request.resource.data.updatedAt is int;
 
       allow delete: if isSuperAdmin();
+
+      // ---- departments/{departmentId}/faculty/{facultyId} ------------------
+      // Teaching-staff directory of one department. Directory data only —
+      // never a login account. Reads: the department's own members, its HOD,
+      // or the SUPER_ADMIN. Writes: exactly that department's HOD or the
+      // SUPER_ADMIN. Students have no write path at all.
+      match /faculty/{facultyId} {
+        function isValidFaculty(data) {
+          return data.keys().hasAll(
+              ['departmentId', 'name', 'designation', 'roomNumber',
+               'email', 'phone', 'createdAt', 'updatedAt']
+            ) &&
+            data.keys().hasOnly(
+              ['departmentId', 'name', 'designation', 'roomNumber',
+               'email', 'phone', 'createdAt', 'updatedAt']
+            ) &&
+            data.departmentId == departmentId &&
+            data.departmentId in departmentIds() &&
+            isNonEmptyString(data.name) &&
+            isNonEmptyString(data.designation) &&
+            isNonEmptyString(data.roomNumber) &&
+            data.email is string && data.email.size() <= 200 &&
+            data.phone is string && data.phone.size() <= 30 &&
+            data.createdAt is int &&
+            data.updatedAt is int;
+        }
+
+        allow get, list: if canReadThisDepartment();
+
+        allow create: if (isHodOfThisDepartment() || isSuperAdmin()) &&
+          isValidFaculty(request.resource.data);
+
+        allow update: if (isHodOfThisDepartment() || isSuperAdmin()) &&
+          isValidFaculty(request.resource.data);
+
+        allow delete: if isHodOfThisDepartment() || isSuperAdmin();
+      }
     }
 
     // ---- calendarEvents/{eventId} ------------------------------------------

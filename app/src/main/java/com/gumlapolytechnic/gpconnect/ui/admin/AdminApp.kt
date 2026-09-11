@@ -17,6 +17,10 @@ object AdminRoutes {
     const val SIGNUP_REQUESTS = "admin-signup-requests"
     const val TEACHERS = "admin-teachers"
     const val DEPARTMENT_INFO = "admin-department-info"
+    const val FACULTY = "admin-faculty"
+    const val FACULTY_CREATE = "admin-faculty-create"
+    const val FACULTY_EDIT = "admin-faculty-edit/{facultyId}"
+    const val FACULTY_EDIT_ARG = "facultyId"
     const val CALENDAR = "admin-calendar"
     const val CALENDAR_CREATE = "admin-calendar-create"
     const val CALENDAR_EDIT = "admin-calendar-edit/{eventId}"
@@ -24,6 +28,7 @@ object AdminRoutes {
 
     fun editNotice(noticeId: String) = "admin-edit/$noticeId"
     fun editCalendarEvent(eventId: String) = "admin-calendar-edit/$eventId"
+    fun editFaculty(facultyId: String) = "admin-faculty-edit/$facultyId"
 }
 
 /**
@@ -78,6 +83,13 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                 // both reject every other department.
                 onOpenDepartmentInfo = if (user.isHod) {
                     { navController.navigate(AdminRoutes.DEPARTMENT_INFO) }
+                } else {
+                    null
+                },
+                // Faculty directory management, likewise HOD-only and scoped
+                // to the caller's own department by screen and rules.
+                onOpenFaculty = if (user.isHod) {
+                    { navController.navigate(AdminRoutes.FACULTY) }
                 } else {
                     null
                 },
@@ -158,6 +170,32 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                     adminUser = user,
                     onBack = { navController.popBackStack() },
                 )
+            }
+            // HOD's faculty directory (own department only).
+            composable(AdminRoutes.FACULTY) {
+                FacultyManagementScreen(
+                    adminUser = user,
+                    onAddFaculty = { navController.navigate(AdminRoutes.FACULTY_CREATE) },
+                    onEditFaculty = { id -> navController.navigate(AdminRoutes.editFaculty(id)) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(AdminRoutes.FACULTY_CREATE) {
+                FacultyFormScreen(
+                    adminUser = user,
+                    editFacultyId = null,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(AdminRoutes.FACULTY_EDIT) { entry ->
+                val facultyId = entry.arguments?.getString(AdminRoutes.FACULTY_EDIT_ARG)
+                if (facultyId != null) {
+                    FacultyFormScreen(
+                        adminUser = user,
+                        editFacultyId = facultyId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
         }
     }
