@@ -96,6 +96,27 @@ service cloud.firestore {
       ];
     }
 
+    // Canonical id for a stored users.department value. The canonical id
+    // resolves to itself; the legacy free-text labels written by the
+    // pre-canonical app (and still tolerated client-side by
+    // Department.resolveOrNull in data/model/Department.kt) resolve to their
+    // department; anything else resolves to '' and can never equal a real
+    // path segment. Mirrors the forms resolveOrNull accepts — extend the two
+    // together. Canonical ids stay the primary representation everywhere.
+    function resolveDepartmentId(value) {
+      return value == 'COMPUTER_APPLICATIONS' || value == 'Computer Applications' || value == 'BCA'
+        ? 'COMPUTER_APPLICATIONS'
+        : value == 'MECHANICAL_ENGINEERING' || value == 'Mechanical Engineering' || value == 'Mechanical'
+        ? 'MECHANICAL_ENGINEERING'
+        : value == 'CIVIL_ENGINEERING' || value == 'Civil Engineering' || value == 'Civil'
+        ? 'CIVIL_ENGINEERING'
+        : value == 'MINING_ENGINEERING' || value == 'Mining Engineering' || value == 'Mining'
+        ? 'MINING_ENGINEERING'
+        : value == 'ELECTRICAL_ENGINEERING' || value == 'Electrical Engineering' || value == 'Electrical'
+        ? 'ELECTRICAL_ENGINEERING'
+        : '';
+    }
+
     // Which department offers each course. Mirrors the `department` property of
     // the Course enum in data/model/Department.kt, so adding a course requires
     // the same edit there. The map (rather than a flat id list) is what lets the
@@ -399,10 +420,16 @@ service cloud.firestore {
 
       // A member of exactly this department, the department's own HOD, or
       // the SUPER_ADMIN. Members therefore read only their own department's
-      // faculty; there is no cross-department read at all.
+      // faculty; there is no cross-department read at all. The member branch
+      // resolves the caller's stored department through resolveDepartmentId()
+      // so legacy display-label profiles ("Computer Applications") match
+      // their canonical department; unresolvable values stay '' and match
+      // nothing. The HOD branch needs no resolution: isHod() already
+      // requires a canonical department id.
       function canReadThisDepartment() {
         return isSuperAdmin() || isHodOfThisDepartment() ||
-          (isEnabled() && departmentId == currentDepartment());
+          (isEnabled() &&
+            resolveDepartmentId(currentDepartment()) == departmentId);
       }
 
       // Any enabled member may read department info.
