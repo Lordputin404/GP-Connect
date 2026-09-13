@@ -80,10 +80,12 @@ interface CanteenRepository {
 /**
  * Client-side ordering: categories by displayOrder then name; items by
  * displayOrder then name, grouped visually by the caller. Enabled/available
- * filtering happens server-side via the query constraints.
+ * filtering happens server-side via the query constraints. The two helpers
+ * have distinct names because JVM type erasure would otherwise give the
+ * generic receivers identical signatures.
  */
-internal fun List<CanteenCategory>.sortedForMenu(): List<CanteenCategory> =
+internal fun List<CanteenCategory>.sortedCategoriesForMenu(): List<CanteenCategory> =
     sortedWith(compareBy({ it.displayOrder }, { it.name.lowercase() }))
 
-internal fun List<CanteenMenuItem>.sortedForMenu(): List<CanteenMenuItem> =
+internal fun List<CanteenMenuItem>.sortedItemsForMenu(): List<CanteenMenuItem> =
     sortedWith(compareBy({ it.displayOrder }, { it.name.lowercase() }))

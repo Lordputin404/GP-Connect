@@ -7,7 +7,8 @@ import com.gumlapolytechnic.gpconnect.data.repository.CanteenCategoryDraft
 import com.gumlapolytechnic.gpconnect.data.repository.CanteenMenuItemDraft
 import com.gumlapolytechnic.gpconnect.data.repository.CanteenQuery
 import com.gumlapolytechnic.gpconnect.data.repository.CanteenRepository
-import com.gumlapolytechnic.gpconnect.data.repository.sortedForMenu
+import com.gumlapolytechnic.gpconnect.data.repository.sortedCategoriesForMenu
+import com.gumlapolytechnic.gpconnect.data.repository.sortedItemsForMenu
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -47,7 +48,7 @@ class FirebaseCanteenRepository : CanteenRepository {
                     val categories = snapshot?.documents
                         ?.mapNotNull { it.toCanteenCategory() }
                         .orEmpty()
-                        .sortedForMenu()
+                        .sortedCategoriesForMenu()
                     trySend(Result.success(categories))
                 }
             awaitClose { registration.remove() }
@@ -74,7 +75,7 @@ class FirebaseCanteenRepository : CanteenRepository {
                     val items = snapshot?.documents
                         ?.mapNotNull { it.toCanteenMenuItem() }
                         .orEmpty()
-                        .sortedForMenu()
+                        .sortedItemsForMenu()
                     trySend(Result.success(items))
                 }
             awaitClose { registration.remove() }
