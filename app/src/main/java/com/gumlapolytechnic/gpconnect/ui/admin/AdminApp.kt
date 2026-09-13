@@ -29,11 +29,16 @@ object AdminRoutes {
     const val LIBRARY_CREATE = "admin-library-create"
     const val LIBRARY_EDIT = "admin-library-edit/{bookId}"
     const val LIBRARY_EDIT_ARG = "bookId"
+    const val CANTEEN = "admin-canteen"
+    const val CANTEEN_ITEM_CREATE = "admin-canteen-item-create"
+    const val CANTEEN_ITEM_EDIT = "admin-canteen-item-edit/{itemId}"
+    const val CANTEEN_ITEM_EDIT_ARG = "itemId"
 
     fun editNotice(noticeId: String) = "admin-edit/$noticeId"
     fun editCalendarEvent(eventId: String) = "admin-calendar-edit/$eventId"
     fun editFaculty(facultyId: String) = "admin-faculty-edit/$facultyId"
     fun editBook(bookId: String) = "admin-library-edit/$bookId"
+    fun editCanteenItem(itemId: String) = "admin-canteen-item-edit/$itemId"
 }
 
 /**
@@ -55,6 +60,9 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
     // Library Management belongs to the LIBRARY_ADMIN; the SUPER_ADMIN has
     // full access too. No other role gets a route at all.
     val managesLibrary = isSuperAdmin || user.role == UserRole.LIBRARY_ADMIN
+    // Canteen Management belongs to the CANTEEN_ADMIN; the SUPER_ADMIN has
+    // full access too. HODs and the LIBRARY_ADMIN get no route at all.
+    val managesCanteen = isSuperAdmin || user.role == UserRole.CANTEEN_ADMIN
 
     NavHost(
         navController = navController,
@@ -79,6 +87,12 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                 // Library catalog management: LIBRARY_ADMIN and SUPER_ADMIN.
                 onOpenLibrary = if (managesLibrary) {
                     { navController.navigate(AdminRoutes.LIBRARY) }
+                } else {
+                    null
+                },
+                // Canteen management: CANTEEN_ADMIN and SUPER_ADMIN.
+                onOpenCanteen = if (managesCanteen) {
+                    { navController.navigate(AdminRoutes.CANTEEN) }
                 } else {
                     null
                 },
@@ -182,6 +196,32 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                 if (bookId != null) {
                     AdminBookFormScreen(
                         editBookId = bookId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+            }
+        }
+        // Canteen management (college-wide categories + menu items):
+        // CANTEEN_ADMIN and SUPER_ADMIN. The rules reject every other role.
+        if (managesCanteen) {
+            composable(AdminRoutes.CANTEEN) {
+                AdminCanteenScreen(
+                    onAddItem = { navController.navigate(AdminRoutes.CANTEEN_ITEM_CREATE) },
+                    onEditItem = { id -> navController.navigate(AdminRoutes.editCanteenItem(id)) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(AdminRoutes.CANTEEN_ITEM_CREATE) {
+                AdminCanteenItemFormScreen(
+                    editItemId = null,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(AdminRoutes.CANTEEN_ITEM_EDIT) { entry ->
+                val itemId = entry.arguments?.getString(AdminRoutes.CANTEEN_ITEM_EDIT_ARG)
+                if (itemId != null) {
+                    AdminCanteenItemFormScreen(
+                        editItemId = itemId,
                         onBack = { navController.popBackStack() },
                     )
                 }

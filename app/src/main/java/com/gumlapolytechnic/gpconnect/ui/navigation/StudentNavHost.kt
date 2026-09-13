@@ -26,10 +26,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.User
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarEventDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.calendar.CalendarScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenItemDetailScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CanteenScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CartScreen
+import com.gumlapolytechnic.gpconnect.ui.canteen.CartViewModel
 import com.gumlapolytechnic.gpconnect.ui.departments.DepartmentDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.departments.DepartmentsScreen
 import com.gumlapolytechnic.gpconnect.ui.faculty.FacultyDetailScreen
@@ -64,12 +69,17 @@ object Routes {
     const val LIBRARY = "library"
     const val LIBRARY_BOOK_DETAIL = "library-book/{bookId}"
     const val LIBRARY_BOOK_DETAIL_ARG = "bookId"
+    const val CANTEEN = "canteen"
+    const val CANTEEN_ITEM_DETAIL = "canteen-item/{itemId}"
+    const val CANTEEN_ITEM_DETAIL_ARG = "itemId"
+    const val CANTEEN_CART = "canteen-cart"
 
     fun noticeDetail(noticeId: String) = "notice/$noticeId"
     fun eventDetail(eventId: String) = "event/$eventId"
     fun departmentDetail(departmentId: String) = "department/$departmentId"
     fun facultyDetail(facultyId: String) = "faculty/$facultyId"
     fun libraryBookDetail(bookId: String) = "library-book/$bookId"
+    fun canteenItemDetail(itemId: String) = "canteen-item/$itemId"
     fun featurePlaceholder(feature: CampusFeature) = "feature/${feature.routeArg}"
 }
 
@@ -100,6 +110,12 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = currentRoute in topLevelRoutes
+
+    // Session cart shared by the Canteen menu, item detail and cart
+    // screens. Scoped to the StudentApp composition: it survives in-app
+    // navigation but clears naturally when the app/session is recreated,
+    // exactly as specified (no Firestore persistence).
+    val cartViewModel: CartViewModel = viewModel { CartViewModel() }
 
     Scaffold(
         bottomBar = {
@@ -136,14 +152,13 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     onViewAllEvents = { navController.navigateTopLevel(Routes.CALENDAR) },
                     onEventClick = { id -> navController.navigate(Routes.eventDetail(id)) },
                     onFeatureClick = { feature ->
-                        // Departments, Faculty and Library are live; Canteen
-                        // stays on its placeholder until its phase.
+                        // Departments, Faculty, Library and Canteen are live.
+                        // Each navigates to its real module screen.
                         when (feature) {
                             CampusFeature.DEPARTMENTS -> navController.navigate("departments")
                             CampusFeature.FACULTY -> navController.navigate(Routes.FACULTY)
                             CampusFeature.LIBRARY -> navController.navigate(Routes.LIBRARY)
-                            CampusFeature.CANTEEN ->
-                                navController.navigate(Routes.featurePlaceholder(feature))
+                            CampusFeature.CANTEEN -> navController.navigate(Routes.CANTEEN)
                         }
                     },
                 )
@@ -221,6 +236,30 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                         onBack = { navController.popBackStack() },
                     )
                 }
+            }
+            // Canteen: college-wide menu for every member.
+            composable(Routes.CANTEEN) {
+                CanteenScreen(
+                    cartViewModel = cartViewModel,
+                    onCartClick = { navController.navigate(Routes.CANTEEN_CART) },
+                    onItemClick = { id -> navController.navigate(Routes.canteenItemDetail(id)) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.CANTEEN_ITEM_DETAIL) { entry ->
+                val itemId = entry.arguments?.getString(Routes.CANTEEN_ITEM_DETAIL_ARG)
+                if (itemId != null) {
+                    CanteenItemDetailScreen(
+                        itemId = itemId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+            }
+            composable(Routes.CANTEEN_CART) {
+                CartScreen(
+                    cartViewModel = cartViewModel,
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(Routes.FACULTY_DETAIL) { entry ->
                 val facultyId = entry.arguments?.getString(Routes.FACULTY_DETAIL_ARG)

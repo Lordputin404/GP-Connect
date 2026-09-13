@@ -19,8 +19,9 @@ rules_version = '2';
 //  LIBRARY_ADMIN / CANTEEN_ADMIN / FACILITY_ADMIN
 //                 publish notices for their own module. The LIBRARY_ADMIN
 //                 additionally manages the libraryBooks catalog (all
-//                 departments); members read only their own department's
-//                 books.
+//                 departments); the CANTEEN_ADMIN manages the college-wide
+//                 canteenCategories/canteenMenuItems catalog. Members read
+//                 enabled/available canteen data only.
 //  TEACHER        a member (not an admin). Reads content, no write authority.
 //  STUDENT        a member. Reads content, no write authority.
 //
@@ -649,6 +650,99 @@ service cloud.firestore {
           .hasOnly(['availableCopies', 'updatedAt']);
 
       allow delete: if isLibraryAdmin();
+    }
+
+    // ---- canteenCategories/{categoryId} / canteenMenuItems/{itemId} --------
+    // Canteen catalog. College-wide: one shared menu for every member, no
+    // department field exists at all.
+    //
+    // Reads: members (STUDENT/TEACHER) see *enabled* categories and
+    // *available* items only — the rules read resource.data.enabled /
+    // resource.data.isAvailable, which forces every member query to carry
+    // the matching whereEqualTo. The CANTEEN_ADMIN and SUPER_ADMIN read
+    // everything, including disabled categories and unavailable items.
+    // Writes: CANTEEN_ADMIN and SUPER_ADMIN only. Members are read-only;
+    // HODs and the LIBRARY_ADMIN get no canteen access at all — nothing in
+    // the existing role system grants them one. No order/cart collections
+    // exist in this phase (the cart is local-only).
+    match /canteenCategories/{categoryId} {
+      function isCanteenAdmin() {
+        return isEnabled() &&
+          (currentRole() == 'CANTEEN_ADMIN' || currentRole() == 'SUPER_ADMIN');
+      }
+
+      function isValidCategory(data) {
+        return data.keys().hasAll(['name', 'displayOrder', 'enabled', 'createdAt', 'updatedAt']) &&
+          data.keys().hasOnly(['name', 'displayOrder', 'enabled', 'createdAt', 'updatedAt']) &&
+          isNonEmptyString(data.name) &&
+          data.displayOrder is int && data.displayOrder >= 0 &&
+          data.enabled is bool &&
+          data.createdAt is int &&
+          data.updatedAt is int;
+      }
+
+      // Reading is granted per document: a disabled category is visible
+      // only to the canteen/super admin. A member query must therefore
+      // filter on enabled == true, which is what the client's member
+      // listener does.
+      allow get, list: if isCanteenAdmin() ||
+        (isEnabled() && resource.data.enabled == true);
+
+      allow create: if isCanteenAdmin() && isValidCategory(request.resource.data);
+
+      // Full-category update (edit dialog). The same shape contract as
+      // create; updatedAt is refreshed so edits are always stamped.
+      allow update: if isCanteenAdmin() && isValidCategory(request.resource.data);
+
+      // The enable/disable quick toggle: only the two fields may change.
+      allow update: if isCanteenAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['enabled', 'updatedAt']);
+
+      allow delete: if isCanteenAdmin();
+    }
+
+    match /canteenMenuItems/{itemId} {
+      function isCanteenAdmin() {
+        return isEnabled() &&
+          (currentRole() == 'CANTEEN_ADMIN' || currentRole() == 'SUPER_ADMIN');
+      }
+
+      function isValidMenuItem(data) {
+        return data.keys().hasAll(
+            ['name', 'categoryId', 'price', 'isAvailable', 'createdAt', 'updatedAt']
+          ) &&
+          data.keys().hasOnly(
+            ['name', 'categoryId', 'price', 'description', 'isAvailable',
+             'displayOrder', 'createdAt', 'updatedAt']
+          ) &&
+          isNonEmptyString(data.name) &&
+          isNonEmptyString(data.categoryId) &&
+          data.price is int && data.price > 0 &&
+          data.description is string && data.description.size() <= 500 &&
+          data.isAvailable is bool &&
+          data.displayOrder is int && data.displayOrder >= 0 &&
+          data.createdAt is int &&
+          data.updatedAt is int;
+      }
+
+      // An unavailable item is visible only to the canteen/super admin.
+      // A member query must therefore filter on isAvailable == true.
+      allow get, list: if isCanteenAdmin() ||
+        (isEnabled() && resource.data.isAvailable == true);
+
+      allow create: if isCanteenAdmin() && isValidMenuItem(request.resource.data);
+
+      // Full-item update (edit form). The same shape contract as create;
+      // updatedAt is refreshed so edits are always stamped.
+      allow update: if isCanteenAdmin() && isValidMenuItem(request.resource.data);
+
+      // The availability quick toggle: only the two fields may change.
+      allow update: if isCanteenAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['isAvailable', 'updatedAt']);
+
+      allow delete: if isCanteenAdmin();
     }
   }
 }
