@@ -35,6 +35,8 @@ import com.gumlapolytechnic.gpconnect.ui.departments.DepartmentsScreen
 import com.gumlapolytechnic.gpconnect.ui.faculty.FacultyDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.faculty.FacultyScreen
 import com.gumlapolytechnic.gpconnect.ui.home.HomeScreen
+import com.gumlapolytechnic.gpconnect.ui.library.LibraryBookDetailScreen
+import com.gumlapolytechnic.gpconnect.ui.library.LibraryScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticeDetailScreen
 import com.gumlapolytechnic.gpconnect.ui.notices.NoticesScreen
 import com.gumlapolytechnic.gpconnect.ui.placeholder.CampusFeature
@@ -59,11 +61,15 @@ object Routes {
     const val FACULTY_DETAIL_ARG = "facultyId"
     const val FEATURE_PLACEHOLDER = "feature/{feature}"
     const val FEATURE_ARG = "feature"
+    const val LIBRARY = "library"
+    const val LIBRARY_BOOK_DETAIL = "library-book/{bookId}"
+    const val LIBRARY_BOOK_DETAIL_ARG = "bookId"
 
     fun noticeDetail(noticeId: String) = "notice/$noticeId"
     fun eventDetail(eventId: String) = "event/$eventId"
     fun departmentDetail(departmentId: String) = "department/$departmentId"
     fun facultyDetail(facultyId: String) = "faculty/$facultyId"
+    fun libraryBookDetail(bookId: String) = "library-book/$bookId"
     fun featurePlaceholder(feature: CampusFeature) = "feature/${feature.routeArg}"
 }
 
@@ -130,12 +136,14 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     onViewAllEvents = { navController.navigateTopLevel(Routes.CALENDAR) },
                     onEventClick = { id -> navController.navigate(Routes.eventDetail(id)) },
                     onFeatureClick = { feature ->
-                        // Departments and Faculty are live; Library/Canteen
-                        // stay on their placeholders until their phases.
+                        // Departments, Faculty and Library are live; Canteen
+                        // stays on its placeholder until its phase.
                         when (feature) {
                             CampusFeature.DEPARTMENTS -> navController.navigate("departments")
                             CampusFeature.FACULTY -> navController.navigate(Routes.FACULTY)
-                            else -> navController.navigate(Routes.featurePlaceholder(feature))
+                            CampusFeature.LIBRARY -> navController.navigate(Routes.LIBRARY)
+                            CampusFeature.CANTEEN ->
+                                navController.navigate(Routes.featurePlaceholder(feature))
                         }
                     },
                 )
@@ -195,6 +203,24 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     onFacultyClick = { id -> navController.navigate(Routes.facultyDetail(id)) },
                     onBack = { navController.popBackStack() },
                 )
+            }
+            // Library catalog of the signed-in student's own department.
+            composable(Routes.LIBRARY) {
+                LibraryScreen(
+                    user = user,
+                    onBookClick = { id -> navController.navigate(Routes.libraryBookDetail(id)) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.LIBRARY_BOOK_DETAIL) { entry ->
+                val bookId = entry.arguments?.getString(Routes.LIBRARY_BOOK_DETAIL_ARG)
+                if (bookId != null) {
+                    LibraryBookDetailScreen(
+                        user = user,
+                        bookId = bookId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
             composable(Routes.FACULTY_DETAIL) { entry ->
                 val facultyId = entry.arguments?.getString(Routes.FACULTY_DETAIL_ARG)

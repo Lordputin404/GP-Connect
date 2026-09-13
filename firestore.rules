@@ -17,7 +17,10 @@ rules_version = '2';
 //                 and decides signup requests for that department only, and
 //                 manages STUDENT/TEACHER accounts of that department only.
 //  LIBRARY_ADMIN / CANTEEN_ADMIN / FACILITY_ADMIN
-//                 publish notices for their own module. No user access at all.
+//                 publish notices for their own module. The LIBRARY_ADMIN
+//                 additionally manages the libraryBooks catalog (all
+//                 departments); members read only their own department's
+//                 books.
 //  TEACHER        a member (not an admin). Reads content, no write authority.
 //  STUDENT        a member. Reads content, no write authority.
 //
@@ -565,6 +568,87 @@ service cloud.firestore {
           .hasOnly(['isPublished', 'updatedAt']);
 
       allow delete: if isSuperAdmin();
+    }
+
+    // ---- libraryBooks/{bookId} ---------------------------------------------
+    // Library catalog. One flat collection; `departmentId` is the canonical
+    // Department id — the exact same registry used by users.department, so
+    // no separate department registry exists.
+    //
+    // Reads: a member (STUDENT/TEACHER) may read only its own department's
+    // books — the list rule matches on resource.data.departmentId, which
+    // forces every member query to carry the matching whereEqualTo. The
+    // LIBRARY_ADMIN and SUPER_ADMIN read everything. Other admin roles
+    // (HOD/Canteen/Facility) get no library read at all — nothing in the
+    // existing role system grants them one.
+    // Writes: LIBRARY_ADMIN and SUPER_ADMIN only. Members have no write
+    // path at all; no issuing/returning exists in this phase.
+    match /libraryBooks/{bookId} {
+
+      // An enabled member of exactly this book's department, the
+      // LIBRARY_ADMIN, or the SUPER_ADMIN. The member branch resolves the
+      // caller's stored department through resolveDepartmentId() so legacy
+      // display-label profiles match their canonical department.
+      function canReadThisBook() {
+        return isSuperAdmin() ||
+          (currentRole() == 'LIBRARY_ADMIN' && isEnabled()) ||
+          (isEnabled() && currentRole() in memberRoles() &&
+            resource.data.departmentId == resolveDepartmentId(currentDepartment()));
+      }
+
+      function isLibraryAdmin() {
+        return isEnabled() &&
+          (currentRole() == 'LIBRARY_ADMIN' || currentRole() == 'SUPER_ADMIN');
+      }
+
+      // Field validation mirrors the calendarEvents shape contract: the
+      // required keys are always present, optional ones may be blank strings
+      // but the key set is closed; departmentId must be a canonical id;
+      // copies are non-negative ints with available <= total; timestamps
+      // are epoch-millisecond ints.
+      function isValidBook(data) {
+        return data.keys().hasAll(
+            ['title', 'author', 'departmentId', 'totalCopies', 'availableCopies',
+             'createdAt', 'updatedAt']
+          ) &&
+          data.keys().hasOnly(
+            ['title', 'author', 'departmentId', 'totalCopies', 'availableCopies',
+             'category', 'isbn', 'rackNumber', 'createdAt', 'updatedAt']
+          ) &&
+          isNonEmptyString(data.title) &&
+          isNonEmptyString(data.author) &&
+          data.departmentId in departmentIds() &&
+          data.category is string && data.category.size() <= 100 &&
+          data.isbn is string && data.isbn.size() <= 40 &&
+          data.rackNumber is string && data.rackNumber.size() <= 40 &&
+          data.totalCopies is int && data.totalCopies >= 1 &&
+          data.availableCopies is int &&
+          data.availableCopies >= 0 &&
+          data.availableCopies <= data.totalCopies &&
+          data.createdAt is int &&
+          data.updatedAt is int;
+      }
+
+      allow get, list: if canReadThisBook();
+
+      allow create: if isLibraryAdmin() && isValidBook(request.resource.data);
+
+      // Full-book update (edit form). The same shape contract as create;
+      // updatedAt is refreshed so edits are always stamped.
+      allow update: if isLibraryAdmin() &&
+        isValidBook(request.resource.data);
+
+      // The availability/copy-count quick edit from the management list:
+      // only the two fields (plus the stamp) may change, and the merged
+      // document must still satisfy the copy-count invariant.
+      allow update: if isLibraryAdmin() &&
+        request.resource.data.availableCopies is int &&
+        request.resource.data.availableCopies >= 0 &&
+        request.resource.data.availableCopies <= request.resource.data.totalCopies &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['availableCopies', 'updatedAt']);
+
+      allow delete: if isLibraryAdmin();
     }
   }
 }

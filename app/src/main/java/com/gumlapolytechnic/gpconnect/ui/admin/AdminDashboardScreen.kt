@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Domain
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.HowToReg
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -85,6 +86,7 @@ fun AdminDashboardScreen(
     onEditNotice: (String) -> Unit,
     onOpenAdminManagement: (() -> Unit)?,
     onOpenCalendar: (() -> Unit)?,
+    onOpenLibrary: (() -> Unit)?,
     onOpenSignupRequests: (() -> Unit)?,
     onOpenTeachers: (() -> Unit)?,
     onOpenDepartmentInfo: (() -> Unit)?,
@@ -312,6 +314,23 @@ fun AdminDashboardScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.admin_calendar_title))
+                            }
+                        }
+                        // Library catalog management: LIBRARY_ADMIN and
+                        // SUPER_ADMIN (books across all departments).
+                        if (onOpenLibrary != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = onOpenLibrary,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.MenuBook,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.admin_library_title))
                             }
                         }
                         if (onOpenSignupRequests != null) {

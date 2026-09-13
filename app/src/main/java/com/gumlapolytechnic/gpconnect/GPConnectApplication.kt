@@ -5,6 +5,7 @@ import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseAuthRepository
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseCalendarRepository
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseDepartmentRepository
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseFacultyRepository
+import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseLibraryRepository
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseNoticeRepository
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseSignupRequestRepository
 import com.gumlapolytechnic.gpconnect.data.firebase.FirebaseUserRepository
@@ -12,6 +13,7 @@ import com.gumlapolytechnic.gpconnect.data.repository.AuthRepository
 import com.gumlapolytechnic.gpconnect.data.repository.CalendarRepository
 import com.gumlapolytechnic.gpconnect.data.repository.DepartmentRepository
 import com.gumlapolytechnic.gpconnect.data.repository.FacultyRepository
+import com.gumlapolytechnic.gpconnect.data.repository.LibraryRepository
 import com.gumlapolytechnic.gpconnect.data.repository.NoticeRepository
 import com.gumlapolytechnic.gpconnect.data.repository.SignupRequestRepository
 import com.gumlapolytechnic.gpconnect.data.repository.UserRepository
@@ -29,6 +31,7 @@ class AppContainer {
     val calendarRepository: CalendarRepository = FirebaseCalendarRepository()
     val departmentRepository: DepartmentRepository = FirebaseDepartmentRepository()
     val facultyRepository: FacultyRepository = FirebaseFacultyRepository()
+    val libraryRepository: LibraryRepository = FirebaseLibraryRepository()
 }
 
 /** Application entry point. Hosts the dependency container. */

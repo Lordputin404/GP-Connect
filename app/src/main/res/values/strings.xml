@@ -338,4 +338,51 @@
     <string name="admin_teachers_demote">Demote to Student</string>
     <string name="admin_teachers_semester">Sem %1$d</string>
     <string name="admin_teachers_action_failed">Action failed. Check your connection and permissions.</string>
+
+    <!-- Student: Library (own department only) -->
+    <string name="library_no_department_title">No department assigned</string>
+    <string name="library_no_department_body">Your profile has no department, so there is no library catalog to show. Contact your department HOD.</string>
+    <string name="library_error_body">The library catalog could not be loaded.</string>
+    <string name="library_search_hint">Search books</string>
+    <string name="library_empty_search_title">No matching books</string>
+    <string name="library_empty_search_body">Try a different title or author.</string>
+    <string name="library_empty_title">No books yet</string>
+    <string name="library_empty_body">Books of your department will appear here.</string>
+    <string name="library_department_scope">Showing books of the %1$s department</string>
+    <string name="library_available">Available</string>
+    <string name="library_unavailable">Not available</string>
+    <string name="library_book_detail_title">Book</string>
+    <string name="library_book_not_found_title">Book not found</string>
+    <string name="library_book_not_found_body">This book may have been removed or belongs to another department.</string>
+    <string name="library_section_department">Department</string>
+    <string name="library_section_category">Category</string>
+    <string name="library_section_isbn">ISBN</string>
+    <string name="library_section_rack">Rack / shelf number</string>
+    <string name="library_section_total_copies">Total copies</string>
+    <string name="library_section_available_copies">Available copies</string>
+    <string name="library_copies_format">%1$d of %2$d available</string>
+
+    <!-- Admin (Library Admin): book management -->
+    <string name="admin_library_title">Library Management</string>
+    <string name="admin_library_add_title">Add book</string>
+    <string name="admin_library_edit_title">Edit book</string>
+    <string name="admin_library_delete_title">Delete this book?</string>
+    <string name="admin_library_empty_title">No books yet</string>
+    <string name="admin_library_empty_body">Add the first book to the catalog.</string>
+    <string name="admin_library_action_failed">Action failed. Check your connection and permissions.</string>
+    <string name="admin_library_add_copy">+1 copy</string>
+    <string name="admin_library_remove_copy">-1 copy</string>
+    <string name="admin_library_save_error">The book could not be saved. Check your connection and try again.</string>
+    <string name="library_field_title">Book title</string>
+    <string name="library_field_author">Author</string>
+    <string name="library_field_department">Department</string>
+    <string name="library_field_category">Category (optional)</string>
+    <string name="library_field_isbn">ISBN (optional)</string>
+    <string name="library_field_rack">Rack / shelf number (optional)</string>
+    <string name="library_field_total_copies">Total copies</string>
+    <string name="library_field_available_copies">Available copies</string>
+    <string name="library_error_title_required">Book title is required</string>
+    <string name="library_error_author_required">Author is required</string>
+    <string name="library_error_department_required">Select a department</string>
+    <string name="library_error_copies">Enter at least 1 total copy; available copies cannot exceed total</string>
 </resources>

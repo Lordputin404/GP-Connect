@@ -25,10 +25,15 @@ object AdminRoutes {
     const val CALENDAR_CREATE = "admin-calendar-create"
     const val CALENDAR_EDIT = "admin-calendar-edit/{eventId}"
     const val CALENDAR_EDIT_ARG = "eventId"
+    const val LIBRARY = "admin-library"
+    const val LIBRARY_CREATE = "admin-library-create"
+    const val LIBRARY_EDIT = "admin-library-edit/{bookId}"
+    const val LIBRARY_EDIT_ARG = "bookId"
 
     fun editNotice(noticeId: String) = "admin-edit/$noticeId"
     fun editCalendarEvent(eventId: String) = "admin-calendar-edit/$eventId"
     fun editFaculty(facultyId: String) = "admin-faculty-edit/$facultyId"
+    fun editBook(bookId: String) = "admin-library-edit/$bookId"
 }
 
 /**
@@ -47,6 +52,9 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
     // A FACULTY_ADMIN without a resolvable department has no department scope,
     // so it gets no route either — the rules would reject its queries anyway.
     val managesDepartment = isSuperAdmin || user.isHod
+    // Library Management belongs to the LIBRARY_ADMIN; the SUPER_ADMIN has
+    // full access too. No other role gets a route at all.
+    val managesLibrary = isSuperAdmin || user.role == UserRole.LIBRARY_ADMIN
 
     NavHost(
         navController = navController,
@@ -65,6 +73,12 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                 },
                 onOpenCalendar = if (isSuperAdmin) {
                     { navController.navigate(AdminRoutes.CALENDAR) }
+                } else {
+                    null
+                },
+                // Library catalog management: LIBRARY_ADMIN and SUPER_ADMIN.
+                onOpenLibrary = if (managesLibrary) {
+                    { navController.navigate(AdminRoutes.LIBRARY) }
                 } else {
                     null
                 },
@@ -142,6 +156,32 @@ fun AdminApp(user: User, onLogout: () -> Unit) {
                 if (eventId != null) {
                     AdminCalendarEventFormScreen(
                         editEventId = eventId,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+            }
+        }
+        // Library catalog management (books across all departments):
+        // LIBRARY_ADMIN and SUPER_ADMIN. The rules reject every other role.
+        if (managesLibrary) {
+            composable(AdminRoutes.LIBRARY) {
+                AdminLibraryScreen(
+                    onAddBook = { navController.navigate(AdminRoutes.LIBRARY_CREATE) },
+                    onEditBook = { id -> navController.navigate(AdminRoutes.editBook(id)) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(AdminRoutes.LIBRARY_CREATE) {
+                AdminBookFormScreen(
+                    editBookId = null,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(AdminRoutes.LIBRARY_EDIT) { entry ->
+                val bookId = entry.arguments?.getString(AdminRoutes.LIBRARY_EDIT_ARG)
+                if (bookId != null) {
+                    AdminBookFormScreen(
+                        editBookId = bookId,
                         onBack = { navController.popBackStack() },
                     )
                 }
