@@ -13,55 +13,48 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Student library list state — always exactly the caller's own department. */
+/** Student library list state — the college-wide catalog with filters. */
 data class LibraryUiState(
     val isLoading: Boolean = true,
     val isError: Boolean = false,
-    /** Null when the caller has no department on their profile. */
-    val department: Department? = null,
+    /** Selected department filter; null is the All filter. */
+    val selectedDepartment: Department? = null,
     val search: String = "",
     val books: List<Book> = emptyList(),
 ) {
-    val isFiltered: Boolean get() = search.isNotBlank()
+    val isFiltered: Boolean get() = search.isNotBlank() || selectedDepartment != null
 }
 
 /**
- * Library catalog of the signed-in member's own department. The department
- * comes from the caller's profile — there is deliberately no department
- * selector, and the Firestore rules would reject a cross-department query
- * anyway. Search text matches title/author on the client.
+ * Library catalog for every enabled member — college-wide, not scoped to
+ * the caller's own department. The department filter and the search text
+ * apply together: the department filters the Firestore query server-side,
+ * the search text matches title/author on the client.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryViewModel(
     libraryRepository: LibraryRepository,
-    callerDepartment: Department?,
 ) : ViewModel() {
 
     private val search = MutableStateFlow("")
+    private val department = MutableStateFlow<Department?>(null)
 
-    private val books = search.flatMapLatest { searchText ->
-        if (callerDepartment != null) {
-            libraryRepository.observeBooks(
-                BookQuery(department = callerDepartment, search = searchText),
-            )
-        } else {
-            // Without a department there is nothing to list; the rules
-            // would reject the query outright. Keep the flow idle.
-            flowOf(Result.success(emptyList<Book>()))
-        }
+    private val books = combine(search, department) { querySearch, queryDepartment ->
+        BookQuery(department = queryDepartment, search = querySearch)
+    }.flatMapLatest { query ->
+        libraryRepository.observeBooks(query)
     }
 
     val uiState: StateFlow<LibraryUiState> =
-        combine(books, search) { result, searchText ->
+        combine(books, search, department) { result, searchText, selectedDepartment ->
             result.fold(
                 onSuccess = { list ->
                     LibraryUiState(
                         isLoading = false,
-                        department = callerDepartment,
+                        selectedDepartment = selectedDepartment,
                         search = searchText,
                         books = list,
                     )
@@ -70,7 +63,7 @@ class LibraryViewModel(
                     LibraryUiState(
                         isLoading = false,
                         isError = true,
-                        department = callerDepartment,
+                        selectedDepartment = selectedDepartment,
                         search = searchText,
                     )
                 },
@@ -78,11 +71,15 @@ class LibraryViewModel(
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = LibraryUiState(department = callerDepartment),
+            initialValue = LibraryUiState(),
         )
 
     fun onSearchChange(value: String) {
         search.value = value
+    }
+
+    fun onDepartmentChange(value: Department?) {
+        department.value = value
     }
 }
 
@@ -91,54 +88,40 @@ data class LibraryBookDetailUiState(
     val isLoading: Boolean = true,
     val notFound: Boolean = false,
     val isError: Boolean = false,
-    val department: Department? = null,
     val book: Book? = null,
 )
 
 /**
- * Streams the book list of the caller's own department and selects one
- * book by id. The book is re-resolved on every emission, so a live library
- * admin edit appears immediately; an id that no longer exists (or belongs
- * to another department) shows "not found".
+ * Streams the college-wide book list and selects one book by id. The book
+ * is re-resolved on every emission, so a live library admin edit appears
+ * immediately; an id that no longer exists shows "not found".
  */
 class LibraryBookDetailViewModel(
     libraryRepository: LibraryRepository,
-    callerDepartment: Department?,
     private val bookId: String,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(LibraryBookDetailUiState(department = callerDepartment))
+    private val _uiState = MutableStateFlow(LibraryBookDetailUiState())
     val uiState: StateFlow<LibraryBookDetailUiState> = _uiState.asStateFlow()
 
     init {
-        // A bare `return` is prohibited in an init block; ?.let skips the
-        // stream when the caller has no department (rules would reject it).
-        callerDepartment?.let { department ->
-            viewModelScope.launch {
-                libraryRepository.observeBooks(BookQuery(department = department))
-                    .collect { result ->
-                        _uiState.value = result.fold(
-                            onSuccess = { list ->
-                                val book = list.firstOrNull { it.id == bookId }
-                                LibraryBookDetailUiState(
-                                    isLoading = false,
-                                    notFound = book == null,
-                                    department = department,
-                                    book = book,
-                                )
-                            },
-                            onFailure = {
-                                LibraryBookDetailUiState(
-                                    isLoading = false,
-                                    isError = true,
-                                    department = department,
-                                )
-                            },
-                        )
-                    }
-            }
-        } ?: run {
-            _uiState.value = LibraryBookDetailUiState(isLoading = false, department = null)
+        viewModelScope.launch {
+            libraryRepository.observeBooks(BookQuery())
+                .collect { result ->
+                    _uiState.value = result.fold(
+                        onSuccess = { list ->
+                            val book = list.firstOrNull { it.id == bookId }
+                            LibraryBookDetailUiState(
+                                isLoading = false,
+                                notFound = book == null,
+                                book = book,
+                            )
+                        },
+                        onFailure = {
+                            LibraryBookDetailUiState(isLoading = false, isError = true)
+                        },
+                    )
+                }
         }
     }
 }

@@ -576,25 +576,21 @@ service cloud.firestore {
     // Department id — the exact same registry used by users.department, so
     // no separate department registry exists.
     //
-    // Reads: a member (STUDENT/TEACHER) may read only its own department's
-    // books — the list rule matches on resource.data.departmentId, which
-    // forces every member query to carry the matching whereEqualTo. The
-    // LIBRARY_ADMIN and SUPER_ADMIN read everything. Other admin roles
-    // (HOD/Canteen/Facility) get no library read at all — nothing in the
-    // existing role system grants them one.
+    // Reads: any enabled member (STUDENT/TEACHER) reads the college-wide
+    // catalog — every department's books, not just their own. The
+    // LIBRARY_ADMIN and SUPER_ADMIN likewise read everything. Other admin
+    // roles (HOD/Canteen/Facility) get no library read at all — nothing in
+    // the existing role system grants them one.
     // Writes: LIBRARY_ADMIN and SUPER_ADMIN only. Members have no write
     // path at all; no issuing/returning exists in this phase.
     match /libraryBooks/{bookId} {
 
-      // An enabled member of exactly this book's department, the
-      // LIBRARY_ADMIN, or the SUPER_ADMIN. The member branch resolves the
-      // caller's stored department through resolveDepartmentId() so legacy
-      // display-label profiles match their canonical department.
+      // Any enabled member, the LIBRARY_ADMIN, or the SUPER_ADMIN. Members
+      // may read books of every department — the catalog is college-wide.
       function canReadThisBook() {
         return isSuperAdmin() ||
           (currentRole() == 'LIBRARY_ADMIN' && isEnabled()) ||
-          (isEnabled() && currentRole() in memberRoles() &&
-            resource.data.departmentId == resolveDepartmentId(currentDepartment()));
+          (isEnabled() && currentRole() in memberRoles());
       }
 
       function isLibraryAdmin() {

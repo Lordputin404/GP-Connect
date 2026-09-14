@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * Query for the book list. `department` shapes the Firestore query itself
- * (members must send it to satisfy the rules' list constraint); the optional
- * `search` text is evaluated on the client by [applyBookQuery].
+ * (the server-side department filter of the student Library screen); the
+ * optional `search` text is evaluated on the client by [applyBookQuery].
  */
 data class BookQuery(
     val department: Department? = null,
@@ -30,8 +30,9 @@ data class BookDraft(
  * Library catalog contract, stored at `libraryBooks/{bookId}`.
  *
  * Authority, enforced by firestore.rules:
- *  - Reads: members (STUDENT/TEACHER) see only books of their own
- *    department; the LIBRARY_ADMIN and SUPER_ADMIN see everything.
+ *  - Reads: any enabled member (STUDENT/TEACHER) reads the college-wide
+ *    catalog — every department's books; the LIBRARY_ADMIN and SUPER_ADMIN
+ *    likewise read everything.
  *  - Writes: LIBRARY_ADMIN and SUPER_ADMIN only. Members have no write
  *    path at all.
  *
@@ -41,8 +42,8 @@ data class BookDraft(
 interface LibraryRepository {
     /**
      * Streams books. A non-null [BookQuery.department] filters server-side
-     * (required for member reads); a null department is the admin's
-     * all-departories read.
+     * by the canonical department id; a null department is the unfiltered
+     * college-wide read.
      */
     fun observeBooks(query: BookQuery = BookQuery()): Flow<Result<List<Book>>>
 

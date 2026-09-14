@@ -219,10 +219,9 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                     onBack = { navController.popBackStack() },
                 )
             }
-            // Library catalog of the signed-in student's own department.
+            // Library: college-wide catalog across all departments.
             composable(Routes.LIBRARY) {
                 LibraryScreen(
-                    user = user,
                     onBookClick = { id -> navController.navigate(Routes.libraryBookDetail(id)) },
                     onBack = { navController.popBackStack() },
                 )
@@ -231,7 +230,6 @@ fun StudentApp(user: User, onLogout: () -> Unit) {
                 val bookId = entry.arguments?.getString(Routes.LIBRARY_BOOK_DETAIL_ARG)
                 if (bookId != null) {
                     LibraryBookDetailScreen(
-                        user = user,
                         bookId = bookId,
                         onBack = { navController.popBackStack() },
                     )

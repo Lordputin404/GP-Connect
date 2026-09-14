@@ -15,11 +15,11 @@ import kotlinx.coroutines.flow.callbackFlow
 /**
  * Firestore-backed library catalog. Mirrors the calendar repository: a
  * single collection listener per query with client-side search/ordering
- * ([applyBookQuery]) so no composite index is needed. Member reads carry a
- * `departmentId == own department` constraint — the rules reject any member
- * query without it — while the LIBRARY_ADMIN/SUPER_ADMIN listen to the whole
- * collection. Writes return [Result] so a rules rejection shows as an admin
- * error state rather than a crash.
+ * ([applyBookQuery]) so no composite index is needed. The catalog is
+ * college-wide — every enabled member may read any department's books, the
+ * optional `departmentId == …` constraint in a query is the client's
+ * department filter. Writes return [Result] so a rules rejection shows as
+ * an admin error state rather than a crash.
  */
 class FirebaseLibraryRepository : LibraryRepository {
 
@@ -27,10 +27,8 @@ class FirebaseLibraryRepository : LibraryRepository {
 
     override fun observeBooks(query: BookQuery): Flow<Result<List<Book>>> =
         callbackFlow {
-            // Department-scoped reads filter server-side: the rules `list`
-            // grants members only their own department's books, so carrying
-            // the constraint in the query keeps member reads exact and makes
-            // a rules misconfiguration visible as an error flow.
+            // A non-null query department filters server-side; null is the
+            // college-wide read (All filter / admin management list).
             val collection = if (query.department != null) {
                 firestore.collection(LIBRARY_BOOKS)
                     .whereEqualTo("departmentId", query.department.id)

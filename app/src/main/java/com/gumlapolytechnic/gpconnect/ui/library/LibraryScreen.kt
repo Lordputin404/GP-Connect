@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,23 +45,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gumlapolytechnic.gpconnect.GPConnectApplication
 import com.gumlapolytechnic.gpconnect.R
 import com.gumlapolytechnic.gpconnect.data.model.Book
-import com.gumlapolytechnic.gpconnect.data.model.User
+import com.gumlapolytechnic.gpconnect.data.model.Department
+import com.gumlapolytechnic.gpconnect.ui.components.CategoryChip
 import com.gumlapolytechnic.gpconnect.ui.components.EmptyState
 import com.gumlapolytechnic.gpconnect.ui.components.ErrorState
 import com.gumlapolytechnic.gpconnect.ui.components.NoticeCardShimmer
 
 /**
- * Student Library: the catalog of the signed-in member's own department
- * only. The department comes from the user profile — there is no department
- * selector, and the Firestore rules reject any cross-department read
- * regardless.
+ * Student Library: the college-wide catalog across all five departments,
+ * with a department filter chip row (All + each department) and the
+ * existing search applied together with it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(user: User, onBookClick: (String) -> Unit, onBack: () -> Unit) {
+fun LibraryScreen(onBookClick: (String) -> Unit, onBack: () -> Unit) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: LibraryViewModel = viewModel {
-        LibraryViewModel(app.container.libraryRepository, user.departmentOrNull)
+        LibraryViewModel(app.container.libraryRepository)
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -83,19 +84,6 @@ fun LibraryScreen(user: User, onBookClick: (String) -> Unit, onBack: () -> Unit)
         },
     ) { innerPadding ->
         when {
-            state.department == null -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .verticalScroll(rememberScrollState()),
-                ) {
-                    EmptyState(
-                        title = stringResource(R.string.library_no_department_title),
-                        message = stringResource(R.string.library_no_department_body),
-                    )
-                }
-            }
             state.isLoading -> {
                 Column(
                     modifier = Modifier
@@ -119,7 +107,6 @@ fun LibraryScreen(user: User, onBookClick: (String) -> Unit, onBack: () -> Unit)
                 }
             }
             else -> {
-                val department = state.department!!
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -145,12 +132,27 @@ fun LibraryScreen(user: User, onBookClick: (String) -> Unit, onBack: () -> Unit)
                         shape = MaterialTheme.shapes.small,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.library_department_scope, department.displayName),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item {
+                            CategoryChip(
+                                label = stringResource(R.string.filter_all),
+                                selected = state.selectedDepartment == null,
+                                onClick = { viewModel.onDepartmentChange(null) },
+                            )
+                        }
+                        items(Department.entries.toList()) { department ->
+                            CategoryChip(
+                                label = department.displayName,
+                                selected = state.selectedDepartment == department,
+                                onClick = {
+                                    viewModel.onDepartmentChange(
+                                        if (state.selectedDepartment == department) null else department,
+                                    )
+                                },
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (state.books.isEmpty()) {
@@ -267,10 +269,10 @@ internal fun AvailabilityBadge(available: Boolean) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryBookDetailScreen(user: User, bookId: String, onBack: () -> Unit) {
+fun LibraryBookDetailScreen(bookId: String, onBack: () -> Unit) {
     val app = LocalContext.current.applicationContext as GPConnectApplication
     val viewModel: LibraryBookDetailViewModel = viewModel(key = bookId) {
-        LibraryBookDetailViewModel(app.container.libraryRepository, user.departmentOrNull, bookId)
+        LibraryBookDetailViewModel(app.container.libraryRepository, bookId)
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -291,19 +293,6 @@ fun LibraryBookDetailScreen(user: User, bookId: String, onBack: () -> Unit) {
         },
     ) { innerPadding ->
         when {
-            state.department == null -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .verticalScroll(rememberScrollState()),
-                ) {
-                    EmptyState(
-                        title = stringResource(R.string.library_no_department_title),
-                        message = stringResource(R.string.library_no_department_body),
-                    )
-                }
-            }
             state.isLoading -> {
                 Column(
                     modifier = Modifier
@@ -376,7 +365,8 @@ fun LibraryBookDetailScreen(user: User, bookId: String, onBack: () -> Unit) {
 
                     BookDetailSection(
                         label = stringResource(R.string.library_section_department),
-                        value = book.departmentOrNull?.displayName ?: state.department!!.displayName,
+                        value = book.departmentOrNull?.displayName
+                            ?: stringResource(R.string.departments_not_available),
                     )
                     BookDetailSection(
                         label = stringResource(R.string.library_section_category),
