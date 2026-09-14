@@ -12,6 +12,24 @@ if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
 
+// Release signing credentials come from Gradle properties or environment
+// variables (set by CI from GitHub secrets) — never hardcoded in source.
+// If none are provided, the release signing config is simply absent and
+// assembleRelease/assembleDebug behave exactly as before (unsigned release,
+// normally signed debug).
+val releaseStoreFile = providers.gradleProperty("gpConnectStoreFile")
+    .orElse(providers.environmentVariable("GP_CONNECT_STORE_FILE"))
+    .orNull
+val releaseStorePassword = providers.gradleProperty("gpConnectStorePassword")
+    .orElse(providers.environmentVariable("GP_CONNECT_STORE_PASSWORD"))
+    .orNull
+val releaseKeyAlias = providers.gradleProperty("gpConnectKeyAlias")
+    .orElse(providers.environmentVariable("GP_CONNECT_KEY_ALIAS"))
+    .orNull
+val releaseKeyPassword = providers.gradleProperty("gpConnectKeyPassword")
+    .orElse(providers.environmentVariable("GP_CONNECT_KEY_PASSWORD"))
+    .orNull
+
 android {
     namespace = "com.gumlapolytechnic.gpconnect"
     compileSdk = 36
@@ -24,6 +42,19 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        if (releaseStoreFile != null && releaseStorePassword != null &&
+            releaseKeyAlias != null && releaseKeyPassword != null
+        ) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -31,6 +62,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
