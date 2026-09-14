@@ -1,9 +1,14 @@
 package com.gumlapolytechnic.gpconnect
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -18,14 +23,20 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -72,7 +83,46 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+
+                // Notification permission for FCM on Android 13+. Asked once
+                // per *signed-in session* (not per app start): the launcher is
+                // armed before the shell appears and fires a single
+                // LaunchedEffect when an authenticated shell is showing and
+                // the permission is still undetermined. A denial is never
+                // re-asked within the session — the system honors
+                // "don't ask again" on its own for later sessions.
+                NotificationPermissionRequester(sessionState)
             }
+        }
+    }
+}
+
+/**
+ * Fires the single POST_NOTIFICATIONS request for this session. The
+ * `hasAsked` guard is session-local; `rememberSaveable` would defeat the
+ * per-session semantics, and re-composition can never retrigger because
+ * the effect runs only while `shouldAsk` transitions true.
+ */
+@Composable
+private fun NotificationPermissionRequester(sessionState: SessionState) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+    val context = LocalContext.current
+    var hasAsked by remember { mutableStateOf(false) }
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { /* Result is not tracked in this phase — no settings UI exists yet. */ }
+
+    val signedIn = sessionState is SessionState.StudentActive ||
+        sessionState is SessionState.AdminActive
+    val granted = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.POST_NOTIFICATIONS,
+    ) == PackageManager.PERMISSION_GRANTED
+
+    LaunchedEffect(signedIn) {
+        if (signedIn && !granted && !hasAsked) {
+            hasAsked = true
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }

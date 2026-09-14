@@ -71,6 +71,10 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
+    // Firebase Cloud Messaging client (push notifications). BoM-aligned like
+    // the other Firebase modules; delivery is passive — no token storage or
+    // Cloud Functions yet.
+    implementation(libs.firebase.messaging)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

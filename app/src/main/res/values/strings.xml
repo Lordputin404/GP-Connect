@@ -4,6 +4,10 @@
     <string name="app_tagline">Your Campus. Your Information. One Place.</string>
     <string name="cd_college_logo">Gumla Polytechnic official logo</string>
 
+    <!-- Push notifications (FCM client) -->
+    <string name="notification_channel_name">College updates</string>
+    <string name="notification_channel_description">Notices, calendar events and campus updates from GP Connect.</string>
+
     <!-- Login (Firebase Authentication) -->
     <string name="login_email_label">Email</string>
     <string name="password_label">Password</string>

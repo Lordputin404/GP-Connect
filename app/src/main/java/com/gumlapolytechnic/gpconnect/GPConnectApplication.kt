@@ -19,6 +19,7 @@ import com.gumlapolytechnic.gpconnect.data.repository.LibraryRepository
 import com.gumlapolytechnic.gpconnect.data.repository.NoticeRepository
 import com.gumlapolytechnic.gpconnect.data.repository.SignupRequestRepository
 import com.gumlapolytechnic.gpconnect.data.repository.UserRepository
+import com.gumlapolytechnic.gpconnect.notifications.GPConnectMessagingService
 
 /**
  * Manual dependency container. The production repositories are Firebase-backed
@@ -46,5 +47,8 @@ class GPConnectApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer()
+        // The notification channel must exist before any notification is
+        // posted — created once per process, re-creation is a no-op.
+        GPConnectMessagingService.ensureNotificationChannel(this)
     }
 }
